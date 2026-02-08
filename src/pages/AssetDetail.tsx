@@ -5,6 +5,17 @@ import { calculateAssetDetails, formatCurrency } from '../hooks/useCostCalculati
 import { deleteAsset, updateAsset, getSettings } from '../db';
 import { format } from 'date-fns';
 import type { MaintenanceLog } from '../types';
+import { 
+  ArrowLeft, 
+  Edit, 
+  Trash2, 
+  Plus, 
+  Server, 
+  Cpu, 
+  Zap,
+  Link as LinkIcon,
+  ChevronRight
+} from 'lucide-react';
 
 export default function AssetDetail() {
   const { id } = useParams();
@@ -28,6 +39,13 @@ export default function AssetDetail() {
   }
   
   const details = calculateAssetDetails(asset, allAssets, electricityRate);
+  
+  // v0.5.0: 分开 Components 和 Accessories
+  const components = details.children.filter(c => c.role === 'Component');
+  const accessories = details.children.filter(c => c.role === 'Accessory');
+  
+  // 计算组件总价（用于 System）
+  const componentsTotalPrice = components.reduce((sum, c) => sum + c.price, 0);
   
   const handleDelete = async () => {
     if (!id) return;
@@ -67,50 +85,77 @@ export default function AssetDetail() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-2xl mx-auto p-4">
-        {/* 標題 */}
+        {/* 标题 */}
         <div className="mb-6">
           <button
             onClick={() => navigate('/assets')}
-            className="text-muted-foreground hover:text-foreground mb-4"
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
           >
-            ← 返回
+            <ArrowLeft className="w-5 h-5" />
+            <span>返回</span>
           </button>
           
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-4xl">{categoryEmoji[asset.category]}</span>
+              {/* System 特殊图标 */}
+              {asset.role === 'System' ? (
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
+                  <Server className="w-7 h-7 text-cyan-400" />
+                </div>
+              ) : (
+                <span className="text-5xl">{categoryEmoji[asset.category]}</span>
+              )}
               <div>
-                <h1 className="text-3xl font-bold mb-1">{asset.name}</h1>
-                <p className="text-muted-foreground">{asset.category}</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-3xl font-bold">{asset.name}</h1>
+                  {asset.role === 'System' && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-bold uppercase tracking-widest border border-cyan-500/30">
+                      System
+                    </span>
+                  )}
+                </div>
+                <p className="text-slate-400">{asset.category}</p>
               </div>
             </div>
             <button
               onClick={() => navigate(`/assets/${id}/edit`)}
-              className="bg-secondary px-4 py-2 rounded-lg hover:bg-secondary/80 transition-colors"
+              className="flex items-center gap-2 bg-white/5 border border-slate-800 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
             >
-              編輯
+              <Edit className="w-4 h-4" />
+              <span>编辑</span>
             </button>
           </div>
         </div>
         
         {/* 每日成本大卡片 */}
-        <div className="bg-gradient-to-br from-orange-500 to-red-600 text-white rounded-lg p-6 mb-4">
-          <div className="text-sm opacity-90 mb-2">每日成本</div>
-          <div className="text-5xl font-bold mb-4">
-            {formatCurrency(details.dailyCost, asset.currency)}
+        <div className="glass rounded-2xl p-6 mb-4 border border-slate-800 bg-gradient-to-br from-orange-500/10 to-red-500/10">
+          <div className="flex items-center gap-2 text-orange-400 mb-2 text-sm uppercase tracking-wide font-medium">
+            <Zap className="w-4 h-4" />
+            <span>每日成本</span>
+          </div>
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-xl text-slate-400">NT$</span>
+            <span className="text-6xl font-black">{Math.round(details.dailyCost + details.dailyElectricityCost).toLocaleString()}</span>
           </div>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <div className="opacity-75">持有天數</div>
-              <div className="font-semibold">{details.daysOwned} 天</div>
+              <div className="text-slate-500 mb-1">持有天数</div>
+              <div className="font-semibold text-white">{details.daysOwned} 天</div>
             </div>
             <div>
-              <div className="opacity-75">總成本</div>
-              <div className="font-semibold">{formatCurrency(details.totalCost, asset.currency)}</div>
+              <div className="text-slate-500 mb-1">总成本</div>
+              <div className="font-semibold text-white">{formatCurrency(details.totalCost, asset.currency)}</div>
             </div>
             <div>
-              <div className="opacity-75">購買價格</div>
-              <div className="font-semibold">{formatCurrency(asset.price, asset.currency)}</div>
+              <div className="text-slate-500 mb-1">
+                {asset.role === 'System' ? '组件总价' : '购买价格'}
+              </div>
+              <div className="font-semibold text-white">
+                {asset.role === 'System' 
+                  ? formatCurrency(componentsTotalPrice, asset.currency)
+                  : formatCurrency(asset.price, asset.currency)
+                }
+              </div>
             </div>
           </div>
         </div>
@@ -214,60 +259,97 @@ export default function AssetDetail() {
           </div>
         )}
         
-        {/* v0.4.0 新增：子組件列表 */}
-        {asset.isComposite && (
-          <div className="bg-card border rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">🔧 內部組件</h3>
+        {/* v0.5.0 新增：内部组件列表（仅 System 显示）*/}
+        {asset.role === 'System' && (
+          <div className="glass rounded-2xl p-6 mb-4 border border-cyan-500/30 bg-gradient-to-br from-cyan-500/5 to-blue-500/5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-cyan-400" />
+                <h3 className="font-bold text-lg">内部组件</h3>
+              </div>
               <button
                 onClick={() => navigate(`/assets/new?parent=${asset.id}`)}
-                className="text-sm bg-primary text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 text-sm bg-cyan-500/20 text-cyan-400 px-3 py-2 rounded-lg hover:bg-cyan-500/30 transition-colors border border-cyan-500/30"
               >
-                ＋ 新增組件
+                <Plus className="w-4 h-4" />
+                <span>新增组件</span>
               </button>
             </div>
             
-            {details.children.length > 0 ? (
+            {components.length > 0 ? (
               <div className="space-y-2">
-                {details.children.map(child => (
+                {components.map(child => (
                   <div 
                     key={child.id}
                     onClick={() => navigate(`/assets/${child.id}`)}
-                    className="flex items-center justify-between p-3 bg-accent/50 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer border border-slate-800 group"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{categoryEmoji[child.category]}</span>
+                      <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center">
+                        <Cpu className="w-5 h-5 text-slate-400" />
+                      </div>
                       <div>
-                        <div className="font-medium text-sm">{child.name}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="font-medium">{child.name}</div>
+                        <div className="text-xs text-slate-500">
                           {formatCurrency(child.price, child.currency)}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      →
-                    </div>
+                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
                   </div>
                 ))}
-                <div className="mt-3 pt-3 border-t text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>組件總價值：</span>
-                    <span className="font-semibold text-foreground">
-                      {formatCurrency(
-                        details.children.reduce((sum, c) => sum + c.price, 0),
-                        asset.currency
-                      )}
-                    </span>
+                <div className="mt-4 pt-4 border-t border-slate-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">组件总价值</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm text-slate-400">NT$</span>
+                      <span className="text-2xl font-black text-cyan-400">
+                        {componentsTotalPrice.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-6 text-sm text-muted-foreground">
-                <div className="text-3xl mb-2">📦</div>
-                <p>尚未新增任何組件</p>
-                <p className="text-xs mt-1">點擊上方「新增組件」按鈕開始</p>
+              <div className="text-center py-8 text-slate-500">
+                <Cpu className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="mb-1">尚未添加任何组件</p>
+                <p className="text-xs">点击上方「新增组件」按钮开始组装</p>
               </div>
             )}
+          </div>
+        )}
+        
+        {/* v0.5.0 新增：外接配件列表 */}
+        {accessories.length > 0 && (
+          <div className="glass rounded-2xl p-6 mb-4 border border-slate-800">
+            <div className="flex items-center gap-2 mb-4">
+              <LinkIcon className="w-5 h-5 text-slate-400" />
+              <h3 className="font-bold text-lg">外接配件</h3>
+            </div>
+            
+            <div className="space-y-2">
+              {accessories.map(accessory => (
+                <div 
+                  key={accessory.id}
+                  onClick={() => navigate(`/assets/${accessory.id}`)}
+                  className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer border border-slate-800 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center">
+                      <LinkIcon className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <div>
+                      <div className="font-medium">{accessory.name}</div>
+                      <div className="text-xs text-slate-500">
+                        {formatCurrency(accessory.price, accessory.currency)}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-primary transition-colors" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
         
@@ -326,30 +408,40 @@ export default function AssetDetail() {
         </div>
         
         {/* 刪除按鈕 */}
-        <div className="bg-card border border-red-500/20 rounded-lg p-4">
-          <h3 className="font-semibold text-red-500 mb-2">危險操作</h3>
+        <div className="glass rounded-2xl p-6 border border-red-500/30">
+          <div className="flex items-center gap-2 mb-3">
+            <Trash2 className="w-5 h-5 text-red-400" />
+            <h3 className="font-bold text-red-400">危险操作</h3>
+          </div>
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full bg-red-500/10 text-red-500 px-4 py-2 rounded-lg hover:bg-red-500/20 transition-colors"
+              className="w-full bg-red-500/10 text-red-400 px-4 py-3 rounded-lg hover:bg-red-500/20 transition-colors border border-red-500/30"
             >
-              刪除資產
+              删除资产
             </button>
           ) : (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">確定要刪除此資產嗎？此操作無法復原。</p>
+            <div className="space-y-3">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                <p className="text-sm text-slate-300 mb-2">确定要删除此资产吗？此操作无法撤销。</p>
+                {asset.role === 'System' && components.length > 0 && (
+                  <p className="text-xs text-red-400 font-medium">
+                    ⚠️ 警告：此系统包含 {components.length} 个组件，删除后所有组件也会一并删除。
+                  </p>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 bg-secondary px-4 py-2 rounded-lg hover:bg-secondary/80 transition-colors"
+                  className="flex-1 bg-white/5 border border-slate-700 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                  className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
                 >
-                  確定刪除
+                  确定删除
                 </button>
               </div>
             </div>
