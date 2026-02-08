@@ -243,6 +243,27 @@ export default function AssetForm() {
               <p className="text-xs text-muted-foreground mt-1">
                 預期使用多久？(1年 = 365天, 3年 = 1095天)
               </p>
+              
+              {/* 建議使用天數 */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="text-xs text-muted-foreground">快速選擇：</span>
+                {[
+                  { label: '6個月', days: 180 },
+                  { label: '1年', days: 365 },
+                  { label: '2年', days: 730 },
+                  { label: '3年', days: 1095 },
+                  { label: '5年', days: 1825 }
+                ].map(preset => (
+                  <button
+                    key={preset.days}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, targetLifespan: preset.days.toString() }))}
+                    className="text-xs bg-secondary hover:bg-accent px-2 py-1 rounded transition-colors"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           
