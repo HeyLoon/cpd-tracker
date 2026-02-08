@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAssets, useSubscriptions } from '../hooks/useDatabase';
 import { useCostCalculations, formatCurrency } from '../hooks/useCostCalculations';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -124,7 +125,15 @@ export default function Dashboard() {
       {/* 主要指標 - Daily Burn */}
       <div className="bg-gradient-to-br from-red-500 to-orange-600 text-white p-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-sm font-medium opacity-90 mb-2">你的每日燃燒率</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-sm font-medium opacity-90">你的每日燃燒率</h1>
+            <Link
+              to="/settings"
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              ⚙️
+            </Link>
+          </div>
           <div className="text-6xl font-bold mb-4">
             {formatCurrency(calculations.totalDailyBurn)}
           </div>

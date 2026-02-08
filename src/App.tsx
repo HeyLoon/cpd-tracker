@@ -9,6 +9,7 @@ import Subscriptions from './pages/Subscriptions';
 import SubscriptionForm from './pages/SubscriptionForm';
 import SubscriptionDetail from './pages/SubscriptionDetail';
 import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
 
 function App() {
   // 設定預設為暗色模式
@@ -30,6 +31,7 @@ function App() {
           <Route path="/subscriptions/:id" element={<SubscriptionDetail />} />
           <Route path="/subscriptions/:id/edit" element={<SubscriptionForm />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
         <BottomNav />
       </div>
