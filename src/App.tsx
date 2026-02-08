@@ -1,0 +1,30 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import BottomNav from './components/BottomNav';
+import Dashboard from './pages/Dashboard';
+import Assets from './pages/Assets';
+import Subscriptions from './pages/Subscriptions';
+import Analytics from './pages/Analytics';
+
+function App() {
+  // 設定預設為暗色模式
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-background text-foreground">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/assets" element={<Assets />} />
+          <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/analytics" element={<Analytics />} />
+        </Routes>
+        <BottomNav />
+      </div>
+    </BrowserRouter>
+  );
+}
+
+export default App;
