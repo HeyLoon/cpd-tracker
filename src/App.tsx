@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import Assets from './pages/Assets';
+import AssetForm from './pages/AssetForm';
+import AssetDetail from './pages/AssetDetail';
 import Subscriptions from './pages/Subscriptions';
 import Analytics from './pages/Analytics';
 
@@ -18,6 +20,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/assets" element={<Assets />} />
+          <Route path="/assets/new" element={<AssetForm />} />
+          <Route path="/assets/:id" element={<AssetDetail />} />
+          <Route path="/assets/:id/edit" element={<AssetForm />} />
           <Route path="/subscriptions" element={<Subscriptions />} />
           <Route path="/analytics" element={<Analytics />} />
         </Routes>
