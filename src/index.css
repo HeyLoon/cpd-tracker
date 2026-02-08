@@ -4,48 +4,34 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
+    /* Premium Dark Mode - Deep Slate/Zinc Palette */
+    --background: 222 47% 4%;        /* slate-950 equivalent */
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 217 33% 8%;              /* slate-900 with transparency */
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 217 33% 8%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    
+    /* Electric Blue Accent for Premium Tech Feel */
+    --primary: 199 89% 48%;          /* Electric blue #0EA5E9 */
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 215 25% 15%;        /* Subtle gray-800 */
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 215 25% 15%;
+    --muted-foreground: 217 10% 64%; /* slate-400 */
+    --accent: 199 89% 48%;           /* Match primary for consistency */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    
+    /* Energy/Danger Colors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    
+    /* Borders & Inputs - Subtle */
+    --border: 215 25% 20%;           /* Dark subtle border */
+    --input: 215 25% 15%;
+    --ring: 199 89% 48%;             /* Electric blue ring */
+    --radius: 0.75rem;               /* Slightly larger radius for modern feel */
   }
 }
 
@@ -55,7 +41,40 @@
   }
   
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Force dark mode globally for premium experience */
+  html {
+    color-scheme: dark;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism utilities */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-white/10;
+  }
+  
+  .glass-nav {
+    @apply bg-background/80 backdrop-blur-2xl border-t border-white/10;
+  }
+  
+  /* Premium gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-cyan-400 to-primary;
+  }
+  
+  /* Neon glow effect for key metrics */
+  .neon-glow {
+    text-shadow: 0 0 10px rgba(14, 165, 233, 0.5),
+                 0 0 20px rgba(14, 165, 233, 0.3),
+                 0 0 30px rgba(14, 165, 233, 0.2);
+  }
+  
+  /* Premium card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/20;
   }
 }

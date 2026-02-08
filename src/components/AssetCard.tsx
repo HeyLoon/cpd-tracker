@@ -27,84 +27,139 @@ export default function AssetCard({ asset, allAssets }: AssetCardProps) {
   };
   
   const statusColor: { [key: string]: string } = {
-    'Active': 'bg-green-500/10 text-green-500',
-    'Sold': 'bg-blue-500/10 text-blue-500',
-    'Retired': 'bg-gray-500/10 text-gray-500'
+    'Active': 'text-emerald-400 bg-emerald-500/10',
+    'Sold': 'text-blue-400 bg-blue-500/10',
+    'Retired': 'text-slate-400 bg-slate-500/10'
   };
+  
+  // Composite asset gets special styling
+  const isComposite = asset.isComposite && details.children.length > 0;
   
   return (
     <Link
       to={`/assets/${asset.id}`}
-      className="block bg-card border rounded-lg p-4 hover:border-primary transition-colors"
+      className={`
+        block glass rounded-2xl p-5 card-hover
+        ${isComposite ? 'border-l-4 border-cyan-500' : 'border border-white/10'}
+      `}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{categoryEmoji[asset.category]}</span>
+      {/* Header row */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {/* Icon with special treatment for composite */}
+          <div className={`
+            w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+            ${isComposite 
+              ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30' 
+              : 'bg-white/5'
+            }
+          `}>
+            {isComposite ? '📦' : categoryEmoji[asset.category]}
+          </div>
+          
           <div>
-            <h3 className="font-semibold text-lg">{asset.name}</h3>
-            <p className="text-xs text-muted-foreground">{getCategoryLabel(asset.category)}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-white">{asset.name}</h3>
+              {isComposite && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-semibold uppercase tracking-wider">
+                  System
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-slate-400">{getCategoryLabel(asset.category)}</p>
+              {isComposite && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-xs text-cyan-400 font-medium">
+                    {details.children.length} 個組件
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
-        <span className={`text-xs px-2 py-1 rounded ${statusColor[asset.status]}`}>
+        
+        {/* Status badge */}
+        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${statusColor[asset.status]}`}>
           {getStatusLabel(asset.status)}
         </span>
       </div>
       
-      {/* 每日成本 - 大大顯示（折舊 + 電費） */}
-      <div className="bg-orange-500/10 rounded-lg p-3 mb-3">
-        <div className="text-xs text-orange-400 mb-1">每日成本</div>
-        <div className="text-2xl font-bold text-orange-500">
-          {formatCurrency(details.dailyCost + details.dailyElectricityCost, asset.currency)}
-        </div>
-        {details.dailyElectricityCost > 0 && (
-          <div className="text-xs text-muted-foreground mt-1">
-            含電費 {formatCurrency(details.dailyElectricityCost, asset.currency)}
+      {/* Daily cost - HUGE and prominent */}
+      <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-xl p-4 mb-4 border border-orange-500/20">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <div className="text-xs text-orange-400 mb-1 uppercase tracking-wide font-medium">
+              每日成本
+            </div>
+            <div className="text-3xl font-black text-orange-400">
+              {formatCurrency(details.dailyCost + details.dailyElectricityCost, asset.currency).replace('NT$', '')}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">NT$ / 日</div>
           </div>
-        )}
-      </div>
-      
-      {/* v0.4.0: 顯示子組件數量 */}
-      {asset.isComposite && details.children.length > 0 && (
-        <div className="mb-3 text-xs text-muted-foreground bg-accent/50 rounded px-2 py-1">
-          🔧 組合資產 ({details.children.length} 個組件)
-        </div>
-      )}
-      
-      {/* 統計資訊 */}
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <div className="text-muted-foreground text-xs">持有天數</div>
-          <div className="font-medium">{details.daysOwned} 天</div>
-        </div>
-        <div>
-          <div className="text-muted-foreground text-xs">總成本</div>
-          <div className="font-medium">{formatCurrency(details.totalCost, asset.currency)}</div>
+          
+          {/* Electricity indicator */}
+          {details.dailyElectricityCost > 0 && (
+            <div className="text-right">
+              <div className="flex items-center gap-1 text-xs text-yellow-400 mb-1">
+                <span>⚡</span>
+                <span>{formatCurrency(details.dailyElectricityCost, asset.currency)}</span>
+              </div>
+              <div className="text-[10px] text-slate-500">電費/日</div>
+            </div>
+          )}
         </div>
       </div>
       
-      {/* 目標進度條 */}
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white/5 rounded-lg p-3">
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">持有天數</div>
+          <div className="text-xl font-bold text-white">{details.daysOwned}</div>
+        </div>
+        <div className="bg-white/5 rounded-lg p-3">
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">總成本</div>
+          <div className="text-xl font-bold text-white">
+            {formatCurrency(details.totalCost, asset.currency).replace('NT$', '')}
+          </div>
+        </div>
+      </div>
+      
+      {/* Progress bar - sleek design */}
       {asset.status === 'Active' && (
-        <div className="mt-3">
-          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-            <span>使用目標</span>
-            <span>{Math.round(details.progressPercentage)}%</span>
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs text-slate-400 uppercase tracking-wider">目標進度</span>
+            <span className="text-sm font-bold text-primary">
+              {Math.round(details.progressPercentage)}%
+            </span>
           </div>
-          <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+          
+          <div className="relative w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            {/* Animated gradient bar */}
             <div 
-              className="bg-primary h-full transition-all"
-              style={{ width: `${Math.min(100, details.progressPercentage)}%` }}
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-cyan-400 to-primary rounded-full transition-all duration-500 ease-out"
+              style={{ 
+                width: `${Math.min(100, details.progressPercentage)}%`,
+                boxShadow: '0 0 10px rgba(14, 165, 233, 0.5)'
+              }}
             />
           </div>
-          {details.remainingDays > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">
-              還需 {details.remainingDays} 天達標
-            </p>
-          )}
-          {details.remainingDays <= 0 && (
-            <p className="text-xs text-green-500 mt-1">
-              ✓ 已達成目標！
-            </p>
-          )}
+          
+          {/* Status text */}
+          <div className="mt-2">
+            {details.remainingDays > 0 ? (
+              <p className="text-xs text-slate-500">
+                還需 <span className="text-white font-semibold">{details.remainingDays}</span> 天達標
+              </p>
+            ) : (
+              <p className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                <span>✓</span>
+                <span>已達成目標</span>
+              </p>
+            )}
+          </div>
         </div>
       )}
     </Link>
