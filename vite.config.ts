@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/cpd-tracker/', // GitHub Pages 專案路徑
   plugins: [
     react(),
     VitePWA({
