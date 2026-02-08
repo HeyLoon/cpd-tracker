@@ -11,19 +11,22 @@ export default function Assets() {
   
   const isLoading = !assets;
   
-  // 過濾資產
+  // 過濾資產（排除 Components，它們會在 Systems 下顯示）
   const filteredAssets = assets?.filter(asset => {
+    // 排除內部組件
+    if (asset.role === 'Component') return false;
     if (statusFilter !== 'All' && asset.status !== statusFilter) return false;
     if (categoryFilter !== 'All' && asset.category !== categoryFilter) return false;
     return true;
   }) || [];
   
-  // 統計
+  // 統計（排除 Components）
+  const visibleAssets = assets?.filter(a => a.role !== 'Component') || [];
   const stats = {
-    total: assets?.length || 0,
-    active: assets?.filter(a => a.status === 'Active').length || 0,
-    sold: assets?.filter(a => a.status === 'Sold').length || 0,
-    retired: assets?.filter(a => a.status === 'Retired').length || 0
+    total: visibleAssets.length,
+    active: visibleAssets.filter(a => a.status === 'Active').length,
+    sold: visibleAssets.filter(a => a.status === 'Sold').length,
+    retired: visibleAssets.filter(a => a.status === 'Retired').length
   };
   
   if (isLoading) {
@@ -43,12 +46,20 @@ export default function Assets() {
             <h1 className="text-3xl font-bold mb-2">資產管理</h1>
             <p className="text-muted-foreground">管理你的實體資產與設備</p>
           </div>
-          <Link
-            to="/assets/new"
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
-          >
-            ＋ 新增
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              to="/systems/new"
+              className="bg-cyan-500/20 text-cyan-400 px-4 py-2 rounded-lg hover:bg-cyan-500/30 transition-colors border border-cyan-500/30 text-sm font-medium"
+            >
+              組裝系統
+            </Link>
+            <Link
+              to="/assets/new"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              ＋ 新增
+            </Link>
+          </div>
         </div>
         
         {/* 統計卡片 */}

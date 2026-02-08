@@ -73,14 +73,14 @@ export default function AssetCard({ asset, allAssets }: AssetCardProps) {
   };
   
   const statusStyle = statusColors[asset.status];
-  const isComposite = asset.isComposite && details.children.length > 0;
+  const isSystem = asset.role === 'System' && details.children.length > 0;
   
   return (
     <Link
       to={`/assets/${asset.id}`}
       className={`
         block glass rounded-2xl p-5 card-hover border
-        ${isComposite ? 'border-cyan-500/50' : 'border-slate-800'}
+        ${isSystem ? 'border-cyan-500/50' : 'border-slate-800'}
       `}
     >
       {/* Header */}
@@ -89,12 +89,12 @@ export default function AssetCard({ asset, allAssets }: AssetCardProps) {
           {/* Icon */}
           <div className={`
             w-12 h-12 rounded-xl flex items-center justify-center
-            ${isComposite 
+            ${isSystem 
               ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30' 
               : 'bg-white/5 border border-slate-800'
             }
           `}>
-            {isComposite ? (
+            {isSystem ? (
               <Server className="w-6 h-6 text-cyan-400" />
             ) : (
               <CategoryIcon className="w-6 h-6 text-slate-400" />
@@ -104,7 +104,7 @@ export default function AssetCard({ asset, allAssets }: AssetCardProps) {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-bold text-white">{asset.name}</h3>
-              {isComposite && (
+              {isSystem && (
                 <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-bold uppercase tracking-widest border border-cyan-500/30">
                   System
                 </span>
@@ -112,7 +112,7 @@ export default function AssetCard({ asset, allAssets }: AssetCardProps) {
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span>{getCategoryLabel(asset.category)}</span>
-              {isComposite && (
+              {isSystem && (
                 <>
                   <span className="text-slate-700">•</span>
                   <span className="text-cyan-400 font-medium">

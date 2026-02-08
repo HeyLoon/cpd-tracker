@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Assets from './pages/Assets';
 import AssetForm from './pages/AssetForm';
 import AssetDetail from './pages/AssetDetail';
+import RigBuilderForm from './pages/RigBuilderForm';
 import Subscriptions from './pages/Subscriptions';
 import SubscriptionForm from './pages/SubscriptionForm';
 import SubscriptionDetail from './pages/SubscriptionDetail';
@@ -26,6 +27,7 @@ function App() {
           <Route path="/assets/new" element={<AssetForm />} />
           <Route path="/assets/:id" element={<AssetDetail />} />
           <Route path="/assets/:id/edit" element={<AssetForm />} />
+          <Route path="/systems/new" element={<RigBuilderForm />} />
           <Route path="/subscriptions" element={<Subscriptions />} />
           <Route path="/subscriptions/new" element={<SubscriptionForm />} />
           <Route path="/subscriptions/:id" element={<SubscriptionDetail />} />
