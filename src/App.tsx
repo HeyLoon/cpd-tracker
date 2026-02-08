@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { useEffect } from 'react';
 import BottomNav from './components/BottomNav';
+import SyncStatusBar from './components/SyncStatusBar';
 import Dashboard from './pages/Dashboard';
 import Assets from './pages/Assets';
 import AssetForm from './pages/AssetForm';
@@ -11,6 +12,8 @@ import SubscriptionForm from './pages/SubscriptionForm';
 import SubscriptionDetail from './pages/SubscriptionDetail';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import LoginPage from './pages/LoginPage';
+import { useAutoSync } from './hooks/useSync';
 
 function App() {
   // 設定預設為暗色模式
@@ -18,11 +21,18 @@ function App() {
     document.documentElement.classList.add('dark');
   }, []);
 
+  // 啟動自動同步（每 5 分鐘）
+  useAutoSync(true, 5);
+
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="min-h-screen bg-background text-foreground">
+        {/* 同步狀態列 */}
+        <SyncStatusBar />
+        
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/assets/new" element={<AssetForm />} />
           <Route path="/assets/:id" element={<AssetDetail />} />
@@ -37,7 +47,7 @@ function App() {
         </Routes>
         <BottomNav />
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

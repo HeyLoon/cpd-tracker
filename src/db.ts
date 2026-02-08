@@ -73,6 +73,26 @@ export class CPDDatabase extends Dexie {
         // 不刪除 parentId 和 isComposite，以防需要回滾
       });
     });
+    
+    // Version 4: v0.6.0 PocketBase 同步支援
+    this.version(4).stores({
+      assets: 'id, name, category, purchaseDate, status, role, systemId, linkedAssetId, remoteId, synced, lastSyncedAt',
+      subscriptions: 'id, name, category, startDate, status, billingCycle, remoteId, synced, lastSyncedAt',
+      settings: 'id'
+    }).upgrade(async (trans) => {
+      // 為所有現有資料新增同步欄位
+      await trans.table('assets').toCollection().modify((asset: any) => {
+        asset.remoteId = asset.remoteId ?? null; // PocketBase record ID
+        asset.synced = asset.synced ?? false; // 是否已同步到遠端
+        asset.lastSyncedAt = asset.lastSyncedAt ?? null; // 最後同步時間
+      });
+      
+      await trans.table('subscriptions').toCollection().modify((sub: any) => {
+        sub.remoteId = sub.remoteId ?? null;
+        sub.synced = sub.synced ?? false;
+        sub.lastSyncedAt = sub.lastSyncedAt ?? null;
+      });
+    });
   }
 }
 
@@ -109,6 +129,9 @@ export async function addAsset(asset: Omit<PhysicalAsset, 'id'>): Promise<string
     powerWatts: asset.powerWatts ?? 0,
     dailyUsageHours: asset.dailyUsageHours ?? 0,
     recurringMaintenanceCost: asset.recurringMaintenanceCost ?? 0,
+    // v0.6.0 同步標記
+    synced: false,
+    lastSyncedAt: null,
   };
   await db.assets.add(newAsset);
   return id;
@@ -116,6 +139,10 @@ export async function addAsset(asset: Omit<PhysicalAsset, 'id'>): Promise<string
 
 // 工具函數：更新資產
 export async function updateAsset(id: string, changes: Partial<PhysicalAsset>): Promise<void> {
+  // 標記為未同步（除非是同步服務自己在更新）
+  if (!changes.synced) {
+    changes.synced = false;
+  }
   await db.assets.update(id, changes);
 }
 
@@ -190,12 +217,22 @@ export async function calculateAssetTotalCost(assetId: string): Promise<number> 
 // 工具函數：新增訂閱
 export async function addSubscription(subscription: Omit<Subscription, 'id'>): Promise<string> {
   const id = crypto.randomUUID();
-  await db.subscriptions.add({ ...subscription, id });
+  await db.subscriptions.add({ 
+    ...subscription, 
+    id,
+    // v0.6.0 同步標記
+    synced: false,
+    lastSyncedAt: null,
+  });
   return id;
 }
 
 // 工具函數：更新訂閱
 export async function updateSubscription(id: string, changes: Partial<Subscription>): Promise<void> {
+  // 標記為未同步（除非是同步服務自己在更新）
+  if (!changes.synced) {
+    changes.synced = false;
+  }
   await db.subscriptions.update(id, changes);
 }
 

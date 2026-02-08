@@ -43,6 +43,11 @@ export interface PhysicalAsset {
   // === v0.4.0 保留：隱形成本 ===
   recurringMaintenanceCost: number; // 年度化維護成本（例如散熱膏、保養），預設 0
   
+  // === v0.6.0 新增：PocketBase 同步欄位 ===
+  remoteId?: string | null; // PocketBase record ID
+  synced?: boolean; // 是否已同步到遠端
+  lastSyncedAt?: Date | null; // 最後同步時間
+  
   // === v0.4.0 廢棄欄位（保留作向下相容）===
   parentId?: string | null; // 廢棄：請使用 systemId
   isComposite?: boolean; // 廢棄：請使用 role=System
@@ -69,6 +74,11 @@ export interface Subscription {
   status: SubscriptionStatus;
   cancelledDate?: Date;
   notes?: string;
+  
+  // === v0.6.0 新增：PocketBase 同步欄位 ===
+  remoteId?: string | null; // PocketBase record ID
+  synced?: boolean; // 是否已同步到遠端
+  lastSyncedAt?: Date | null; // 最後同步時間
 }
 
 // === v0.4.0 新增：全域設定 ===

@@ -9,6 +9,7 @@
         "dexie": "^4.3.0",
         "dexie-react-hooks": "^4.2.0",
         "lucide-react": "^0.563.0",
+        "pocketbase": "^0.26.8",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "react-router-dom": "^7.13.0",
@@ -955,6 +956,8 @@
     "pify": ["pify@2.3.0", "https://registry.npmmirror.com/pify/-/pify-2.3.0.tgz", {}, "sha512-udgsAY+fTnvv7kI7aaxbqwWNb0AHiB0qBO89PZKPkoTmGOgdbrHDKD+0B2X4uTfJ/FT1R09r9gTsjUjNJotuog=="],
 
     "pirates": ["pirates@4.0.7", "https://registry.npmmirror.com/pirates/-/pirates-4.0.7.tgz", {}, "sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA=="],
+
+    "pocketbase": ["pocketbase@0.26.8", "https://registry.npmmirror.com/pocketbase/-/pocketbase-0.26.8.tgz", {}, "sha512-aQ/ewvS7ncvAE8wxoW10iAZu6ElgbeFpBhKPnCfvRovNzm2gW8u/sQNPGN6vNgVEagz44kK//C61oKjfa+7Low=="],
 
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "https://registry.npmmirror.com/possible-typed-array-names/-/possible-typed-array-names-1.1.0.tgz", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
 
