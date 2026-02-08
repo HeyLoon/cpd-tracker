@@ -4,6 +4,9 @@ export type AssetCategory = "Tech" | "Music" | "Life" | "Others";
 // 資產狀態
 export type AssetStatus = "Active" | "Sold" | "Retired";
 
+// 資產角色 (v0.5.0 新增)
+export type AssetRole = "Standalone" | "System" | "Component" | "Accessory";
+
 // 貨幣類型
 export type Currency = "TWD" | "JPY" | "USD";
 
@@ -28,16 +31,21 @@ export interface PhysicalAsset {
   soldPrice?: number;
   notes?: string;
   
-  // === v0.4.0 新增：親子關係 ===
-  parentId: string | null; // 父資產 ID（例如 RAM 的父資產是主機）
-  isComposite: boolean; // 是否為組合資產（例如主機可包含多個子組件）
+  // === v0.5.0 重構：角色系統（取代 v0.4.0 的 parentId/isComposite）===
+  role: AssetRole; // 資產角色：Standalone（獨立）、System（系統容器）、Component（內部組件）、Accessory（外接配件）
+  systemId: string | null; // 當 role=Component 時，指向所屬的 System
+  linkedAssetId: string | null; // 當 role=Accessory 時，可選擇連結的資產
   
-  // === v0.4.0 新增：電力規格 ===
+  // === v0.4.0 保留：電力規格 ===
   powerWatts: number; // 功率（瓦特），預設 0
   dailyUsageHours: number; // 每日使用時數，預設 0
   
-  // === v0.4.0 新增：隱形成本 ===
+  // === v0.4.0 保留：隱形成本 ===
   recurringMaintenanceCost: number; // 年度化維護成本（例如散熱膏、保養），預設 0
+  
+  // === v0.4.0 廢棄欄位（保留作向下相容）===
+  parentId?: string | null; // 廢棄：請使用 systemId
+  isComposite?: boolean; // 廢棄：請使用 role=System
 }
 
 // 訂閱週期
@@ -118,15 +126,23 @@ export const LABELS_ZH_TW = {
     dailyCost: '每日成本',
     totalCost: '總成本',
     
-    // v0.4.0 新增
-    isComposite: '組合資產',
-    parentAsset: '父資產',
-    childComponents: '內部組件',
-    addComponent: '新增組件',
+    // v0.4.0 保留
     powerWatts: '功率（瓦）',
     dailyUsageHours: '每日使用時數',
     recurringMaintenance: '年度維護成本',
     estimatedElectricity: '預估電費',
+    
+    // v0.5.0 新增
+    role: '資產角色',
+    standalone: '獨立資產',
+    system: '系統',
+    component: '內部組件',
+    accessory: '外接配件',
+    systemId: '所屬系統',
+    linkedAsset: '連結資產',
+    buildSystem: '組裝系統',
+    componentCount: '組件數量',
+    calculatedPrice: '計算價格',
   },
   
   // 訂閱

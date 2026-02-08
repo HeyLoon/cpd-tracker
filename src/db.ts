@@ -42,6 +42,37 @@ export class CPDDatabase extends Dexie {
         });
       }
     });
+    
+    // Version 3: v0.5.0 重構 - 角色系統（取代親子關係）
+    this.version(3).stores({
+      assets: 'id, name, category, purchaseDate, status, role, systemId, linkedAssetId',
+      subscriptions: 'id, name, category, startDate, status, billingCycle',
+      settings: 'id'
+    }).upgrade(async (trans) => {
+      // 遷移 v0.4.0 的 parentId/isComposite 到 v0.5.0 的 role/systemId
+      await trans.table('assets').toCollection().modify((asset: any) => {
+        // 判斷角色
+        if (asset.isComposite === true) {
+          // 組合資產 → System
+          asset.role = 'System';
+          asset.systemId = null;
+        } else if (asset.parentId !== null && asset.parentId !== undefined) {
+          // 有父資產 → Component
+          asset.role = 'Component';
+          asset.systemId = asset.parentId;
+        } else {
+          // 其他 → Standalone
+          asset.role = 'Standalone';
+          asset.systemId = null;
+        }
+        
+        // 初始化新欄位
+        asset.linkedAssetId = null;
+        
+        // 保留舊欄位作為相容性（標記為 optional）
+        // 不刪除 parentId 和 isComposite，以防需要回滾
+      });
+    });
   }
 }
 
@@ -71,9 +102,10 @@ export async function addAsset(asset: Omit<PhysicalAsset, 'id'>): Promise<string
   const newAsset: PhysicalAsset = {
     ...asset,
     id,
-    // 確保新欄位有預設值
-    parentId: asset.parentId ?? null,
-    isComposite: asset.isComposite ?? false,
+    // v0.5.0 確保新欄位有預設值
+    role: asset.role ?? 'Standalone',
+    systemId: asset.systemId ?? null,
+    linkedAssetId: asset.linkedAssetId ?? null,
     powerWatts: asset.powerWatts ?? 0,
     dailyUsageHours: asset.dailyUsageHours ?? 0,
     recurringMaintenanceCost: asset.recurringMaintenanceCost ?? 0,
@@ -89,12 +121,19 @@ export async function updateAsset(id: string, changes: Partial<PhysicalAsset>): 
 
 // 工具函數：刪除資產（遞迴刪除子組件）
 export async function deleteAsset(id: string): Promise<void> {
-  // 先刪除所有子組件
-  const children = await db.assets.where('parentId').equals(id).toArray();
-  for (const child of children) {
-    await deleteAsset(child.id); // 遞迴刪除
+  // v0.5.0: 刪除所有屬於此 System 的 Components
+  const components = await db.assets.where('systemId').equals(id).toArray();
+  for (const component of components) {
+    await deleteAsset(component.id); // 遞迴刪除
   }
-  // 再刪除本身
+  
+  // 解除所有連結到此資產的 Accessories
+  const linkedAccessories = await db.assets.where('linkedAssetId').equals(id).toArray();
+  for (const accessory of linkedAccessories) {
+    await updateAsset(accessory.id, { linkedAssetId: null });
+  }
+  
+  // 刪除本身
   await db.assets.delete(id);
 }
 
@@ -103,33 +142,45 @@ export async function getActiveAssets(): Promise<PhysicalAsset[]> {
   return await db.assets.where('status').equals('Active').toArray();
 }
 
-// v0.4.0 新增：取得子組件
-export async function getChildAssets(parentId: string): Promise<PhysicalAsset[]> {
-  return await db.assets.where('parentId').equals(parentId).toArray();
+// v0.5.0 新增：取得系統的所有組件
+export async function getSystemComponents(systemId: string): Promise<PhysicalAsset[]> {
+  return await db.assets.where('systemId').equals(systemId).toArray();
 }
 
-// v0.4.0 新增：取得所有頂層資產（沒有父資產）
-export async function getTopLevelAssets(): Promise<PhysicalAsset[]> {
-  return await db.assets.filter(asset => asset.parentId === null).toArray();
+// v0.5.0 新增：取得資產的所有連結配件
+export async function getLinkedAccessories(assetId: string): Promise<PhysicalAsset[]> {
+  return await db.assets.where('linkedAssetId').equals(assetId).toArray();
 }
 
-// v0.4.0 新增：計算資產的總成本（包含所有子組件）
+// v0.5.0 新增：取得所有獨立資產（不包含 Components）
+export async function getStandaloneAssets(): Promise<PhysicalAsset[]> {
+  return await db.assets.filter(asset => 
+    asset.role === 'Standalone' || asset.role === 'System' || asset.role === 'Accessory'
+  ).toArray();
+}
+
+// v0.5.0 更新：計算系統的總成本（所有組件價格總和）
+export async function calculateSystemPrice(systemId: string): Promise<number> {
+  const components = await getSystemComponents(systemId);
+  return components.reduce((sum, comp) => sum + comp.price, 0);
+}
+
+// v0.5.0 更新：計算資產的總成本
 export async function calculateAssetTotalCost(assetId: string): Promise<number> {
   const asset = await db.assets.get(assetId);
   if (!asset) return 0;
   
-  let total = asset.price;
+  let total = 0;
+  
+  // 如果是 System，價格 = 所有 Components 價格總和
+  if (asset.role === 'System') {
+    total = await calculateSystemPrice(assetId);
+  } else {
+    total = asset.price;
+  }
   
   // 加上維護成本
   total += asset.maintenanceLog.reduce((sum, log) => sum + log.cost, 0);
-  
-  // 如果是組合資產，加上所有子組件的成本
-  if (asset.isComposite) {
-    const children = await getChildAssets(assetId);
-    for (const child of children) {
-      total += await calculateAssetTotalCost(child.id); // 遞迴
-    }
-  }
   
   return total;
 }
@@ -166,8 +217,8 @@ export async function exportData(): Promise<string> {
   const subscriptions = await db.subscriptions.toArray();
   const settings = await db.settings.get('global');
   
-  return JSON.stringify({
-    version: 2, // v0.4.0
+    return JSON.stringify({
+    version: 3, // v0.5.0
     exportDate: new Date().toISOString(),
     assets,
     subscriptions,
@@ -186,11 +237,14 @@ export async function importData(jsonData: string): Promise<void> {
     
     // 匯入新資料
     if (data.assets && Array.isArray(data.assets)) {
-      // 確保舊版本資料也能匯入
+      // 確保舊版本資料也能匯入（自動遷移）
       const assetsWithDefaults = data.assets.map((asset: any) => ({
         ...asset,
-        parentId: asset.parentId ?? null,
-        isComposite: asset.isComposite ?? false,
+        // v0.5.0 欄位
+        role: asset.role ?? (asset.isComposite ? 'System' : asset.parentId ? 'Component' : 'Standalone'),
+        systemId: asset.systemId ?? asset.parentId ?? null,
+        linkedAssetId: asset.linkedAssetId ?? null,
+        // v0.4.0 欄位
         powerWatts: asset.powerWatts ?? 0,
         dailyUsageHours: asset.dailyUsageHours ?? 0,
         recurringMaintenanceCost: asset.recurringMaintenanceCost ?? 0,

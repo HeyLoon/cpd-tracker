@@ -54,7 +54,7 @@ export interface SubscriptionCalculation {
 }
 
 /**
- * v0.4.0 升級：核心計算 Hook - 支援親子關係、電費、隱形成本
+ * v0.5.0 升級：核心計算 Hook - 支援角色系統、電費、隱形成本
  */
 export function useCostCalculations(
   assets: PhysicalAsset[],
@@ -74,9 +74,9 @@ export function useCostCalculations(
     const activeAssets = assets.filter(asset => asset.status === 'Active');
     const activeSubscriptions = subscriptions.filter(sub => sub.status === 'Active');
     
-    // === 1. 計算資產折舊成本（只計算頂層資產，避免重複） ===
-    const topLevelAssets = activeAssets.filter(a => a.parentId === null);
-    const assetsDailyCost = topLevelAssets.reduce((total, asset) => {
+    // === 1. 計算資產折舊成本（只計算非 Component 資產，避免重複） ===
+    const visibleAssets = activeAssets.filter(a => a.role !== 'Component');
+    const assetsDailyCost = visibleAssets.reduce((total, asset) => {
       return total + calculateAssetDepreciationRecursive(asset, activeAssets, now);
     }, 0);
     
@@ -102,8 +102,8 @@ export function useCostCalculations(
     // === 6. 計算各分類的每日成本 ===
     const categoryMap = new Map<string, number>();
     
-    // 資產分類成本（只計算頂層）
-    topLevelAssets.forEach(asset => {
+    // 資產分類成本（只計算可見資產）
+    visibleAssets.forEach(asset => {
       const dailyCost = calculateAssetDepreciationRecursive(asset, activeAssets, now);
       const current = categoryMap.get(asset.category) || 0;
       categoryMap.set(asset.category, current + dailyCost);
@@ -148,42 +148,45 @@ export function useCostCalculations(
 }
 
 /**
- * v0.4.0 新增：遞迴計算資產及子組件的折舊成本
+ * v0.5.0 新增：遞迴計算資產及組件的折舊成本
+ * - System: 價格 = 所有 Components 價格總和
+ * - Component: 獨立計算（但不在主列表顯示）
+ * - Standalone/Accessory: 正常計算
  */
 function calculateAssetDepreciationRecursive(
   asset: PhysicalAsset,
   allAssets: PhysicalAsset[],
   now: Date
 ): number {
-  // 本身的折舊
   const daysOwned = Math.max(1, differenceInDays(now, asset.purchaseDate));
   const maintenanceCost = asset.maintenanceLog.reduce((sum, log) => sum + log.cost, 0);
-  const totalCost = asset.price + maintenanceCost;
-  let dailyCost = totalCost / daysOwned;
   
-  // 如果是組合資產，加上所有子組件的折舊
-  if (asset.isComposite) {
-    const children = allAssets.filter(a => a.parentId === asset.id);
-    for (const child of children) {
-      dailyCost += calculateAssetDepreciationRecursive(child, allAssets, now);
-    }
+  let totalCost = maintenanceCost; // 先加維護成本
+  
+  // 如果是 System，價格 = 所有 Components 的價格總和
+  if (asset.role === 'System') {
+    const components = allAssets.filter(a => a.systemId === asset.id);
+    totalCost += components.reduce((sum, comp) => sum + comp.price, 0);
+  } else {
+    // 其他角色使用自己的價格
+    totalCost += asset.price;
   }
   
-  return dailyCost;
+  return totalCost / daysOwned;
 }
 
 /**
- * v0.4.0 新增：同步版本的隱形成本計算
+ * v0.5.0 更新：同步版本的隱形成本計算
  */
 function calculateInvisibleCostsSync(
   assets: PhysicalAsset[],
   subscriptions: Subscription[],
   electricityRate: number
 ): InvisibleCosts {
-  // 1. 電費總計（月）
+  // 1. 電費總計（月）- 只計算非 Component 資產
   let totalElectricityDaily = 0;
-  const topLevelAssets = assets.filter(a => a.parentId === null);
-  for (const asset of topLevelAssets) {
+  const visibleAssets = assets.filter(a => a.role !== 'Component');
+  for (const asset of visibleAssets) {
     totalElectricityDaily += calculateAssetElectricityCostRecursive(
       asset,
       assets,
@@ -216,7 +219,7 @@ function calculateInvisibleCostsSync(
 }
 
 /**
- * v0.4.0 升級：計算單一資產的詳細資訊（含子組件）
+ * v0.5.0 升級：計算單一資產的詳細資訊（含組件）
  */
 export function calculateAssetDetails(
   asset: PhysicalAsset,
@@ -227,16 +230,21 @@ export function calculateAssetDetails(
   const daysOwned = Math.max(1, differenceInDays(now, asset.purchaseDate));
   const maintenanceCost = asset.maintenanceLog.reduce((sum, log) => sum + log.cost, 0);
   
-  // 本身成本
-  let totalCost = asset.price + maintenanceCost;
+  // 計算總成本
+  let totalCost = maintenanceCost;
   
-  // 子組件
-  const children = allAssets.filter(a => a.parentId === asset.id);
+  // 取得子項目（Components 或 linked Accessories）
+  const children = allAssets.filter(a => 
+    (a.role === 'Component' && a.systemId === asset.id) ||
+    (a.role === 'Accessory' && a.linkedAssetId === asset.id)
+  );
   
-  // 遞迴加總子組件成本
-  for (const child of children) {
-    const childDetail = calculateAssetDetails(child, allAssets, electricityRate);
-    totalCost += childDetail.totalCost;
+  // 如果是 System，價格 = 所有 Components 的價格總和
+  if (asset.role === 'System') {
+    const components = allAssets.filter(a => a.systemId === asset.id);
+    totalCost += components.reduce((sum, comp) => sum + comp.price, 0);
+  } else {
+    totalCost += asset.price;
   }
   
   // 折舊成本

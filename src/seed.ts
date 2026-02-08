@@ -10,7 +10,7 @@ export async function seedTestData() {
   await db.assets.clear();
   await db.subscriptions.clear();
   
-  // 新增測試資產（v0.4.0 含親子關係和電力規格）
+  // 新增測試資產（v0.5.0 角色系統）
   const serverId = crypto.randomUUID();
   const assets = [
     {
@@ -30,9 +30,10 @@ export async function seedTestData() {
       targetLifespan: 1095, // 3年
       status: 'Active' as const,
       notes: '用來跑各種服務的小主機',
-      // v0.4.0
-      parentId: null,
-      isComposite: true,
+      // v0.5.0
+      role: 'System' as const,
+      systemId: null,
+      linkedAssetId: null,
       powerWatts: 15,
       dailyUsageHours: 24,
       recurringMaintenanceCost: 300
@@ -48,9 +49,10 @@ export async function seedTestData() {
       targetLifespan: 1095,
       status: 'Active' as const,
       notes: '',
-      // v0.4.0
-      parentId: serverId,
-      isComposite: false,
+      // v0.5.0
+      role: 'Component' as const,
+      systemId: serverId,
+      linkedAssetId: null,
       powerWatts: 0,
       dailyUsageHours: 0,
       recurringMaintenanceCost: 0
@@ -72,9 +74,10 @@ export async function seedTestData() {
       targetLifespan: 3650, // 10年
       status: 'Active' as const,
       notes: '初學者練習吉他',
-      // v0.4.0
-      parentId: null,
-      isComposite: false,
+      // v0.5.0
+      role: 'Standalone' as const,
+      systemId: null,
+      linkedAssetId: null,
       powerWatts: 0,
       dailyUsageHours: 0,
       recurringMaintenanceCost: 500
@@ -90,9 +93,10 @@ export async function seedTestData() {
       targetLifespan: 1825, // 5年
       status: 'Active' as const,
       notes: '主力開發機器',
-      // v0.4.0
-      parentId: null,
-      isComposite: false,
+      // v0.5.0
+      role: 'Standalone' as const,
+      systemId: null,
+      linkedAssetId: null,
       powerWatts: 30,
       dailyUsageHours: 10,
       recurringMaintenanceCost: 0

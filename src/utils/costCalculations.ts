@@ -42,9 +42,9 @@ export function calculateDailyElectricityCost(
 }
 
 /**
- * 遞迴計算資產及其所有子組件的電費
+ * v0.5.0 更新：遞迴計算資產及其所有組件的電費
  * @param asset 資產物件
- * @param allAssets 所有資產列表（用於查找子組件）
+ * @param allAssets 所有資產列表（用於查找組件）
  * @param ratePerKwh 電費單價
  * @returns 每日電費總計
  */
@@ -60,11 +60,11 @@ export function calculateAssetElectricityCostRecursive(
     ratePerKwh
   );
   
-  // 如果是組合資產，加上所有子組件的電費
-  if (asset.isComposite) {
-    const children = allAssets.filter(a => a.parentId === asset.id);
-    for (const child of children) {
-      totalDailyCost += calculateAssetElectricityCostRecursive(child, allAssets, ratePerKwh);
+  // 如果是 System，加上所有 Components 的電費
+  if (asset.role === 'System') {
+    const components = allAssets.filter(a => a.systemId === asset.id);
+    for (const component of components) {
+      totalDailyCost += calculateAssetElectricityCostRecursive(component, allAssets, ratePerKwh);
     }
   }
   
@@ -88,7 +88,7 @@ export function calculateSubscriptionDailyCost(subscription: Subscription): numb
 }
 
 /**
- * v0.4.0 新增：計算隱形成本總覽
+ * v0.5.0 更新：計算隱形成本總覽
  * @param assets 所有資產
  * @param subscriptions 所有訂閱
  * @param electricityRate 電費單價
@@ -103,9 +103,9 @@ export async function calculateInvisibleCosts(
   let totalElectricityDaily = 0;
   const activeAssets = assets.filter(a => a.status === 'Active');
   
-  // 只計算頂層資產（遞迴會處理子組件）
-  const topLevelAssets = activeAssets.filter(a => a.parentId === null);
-  for (const asset of topLevelAssets) {
+  // 只計算非 Component 資產（Components 會在 System 遞迴中處理）
+  const visibleAssets = activeAssets.filter(a => a.role !== 'Component');
+  for (const asset of visibleAssets) {
     totalElectricityDaily += calculateAssetElectricityCostRecursive(
       asset,
       activeAssets,

@@ -32,9 +32,10 @@ export default function AssetForm() {
     targetLifespan: '1095', // 3年
     status: 'Active' as AssetStatus,
     notes: '',
-    // v0.4.0 新增
-    parentId: null as string | null,
-    isComposite: false,
+    // v0.5.0 角色系統
+    role: 'Standalone' as 'Standalone' | 'System' | 'Component' | 'Accessory',
+    systemId: null as string | null,
+    linkedAssetId: null as string | null,
     powerWatts: '0',
     dailyUsageHours: '0',
     recurringMaintenanceCost: '0'
@@ -54,16 +55,17 @@ export default function AssetForm() {
         targetLifespan: existingAsset.targetLifespan.toString(),
         status: existingAsset.status,
         notes: existingAsset.notes || '',
-        // v0.4.0
-        parentId: existingAsset.parentId,
-        isComposite: existingAsset.isComposite,
+        // v0.5.0
+        role: existingAsset.role || 'Standalone',
+        systemId: existingAsset.systemId || null,
+        linkedAssetId: existingAsset.linkedAssetId || null,
         powerWatts: existingAsset.powerWatts?.toString() || '0',
         dailyUsageHours: existingAsset.dailyUsageHours?.toString() || '0',
         recurringMaintenanceCost: existingAsset.recurringMaintenanceCost?.toString() || '0'
       });
     } else if (parentIdFromUrl) {
       // 新增組件時，自動填入父資產
-      setFormData(prev => ({ ...prev, parentId: parentIdFromUrl }));
+      setFormData(prev => ({ ...prev, role: 'Component', systemId: parentIdFromUrl }));
     }
   }, [existingAsset, parentIdFromUrl]);
   
@@ -83,9 +85,10 @@ export default function AssetForm() {
         notes: formData.notes,
         maintenanceLog: existingAsset?.maintenanceLog || [],
         soldPrice: existingAsset?.soldPrice,
-        // v0.4.0 新增
-        parentId: formData.parentId,
-        isComposite: formData.isComposite,
+        // v0.5.0 角色系統
+        role: formData.role,
+        systemId: formData.systemId,
+        linkedAssetId: formData.linkedAssetId,
         powerWatts: parseFloat(formData.powerWatts),
         dailyUsageHours: parseFloat(formData.dailyUsageHours),
         recurringMaintenanceCost: parseFloat(formData.recurringMaintenanceCost)
@@ -315,42 +318,51 @@ export default function AssetForm() {
             </div>
           </div>
           
-          {/* v0.4.0 新增：零部件設定 */}
+          {/* v0.5.0 新增：資產角色設定 */}
           <div className="bg-card border rounded-lg p-4 space-y-4">
-            <h3 className="font-semibold mb-3">🔧 零部件設定</h3>
+            <h3 className="font-semibold mb-3">🔧 資產角色</h3>
             
-            {/* 是否為組合資產 */}
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isComposite}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isComposite: e.target.checked }))}
-                  className="mt-1"
-                />
-                <div>
-                  <div className="font-medium text-sm">這是組合資產（例如：主機、吉他套裝）</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    勾選後，可以在資產詳情頁新增子組件（如：記憶體、SSD）
-                  </p>
-                </div>
+            {/* 角色選擇器 */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                資產類型
               </label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  role: e.target.value as any,
+                  // 重置相關欄位
+                  systemId: e.target.value === 'Component' ? prev.systemId : null,
+                  linkedAssetId: e.target.value === 'Accessory' ? prev.linkedAssetId : null
+                }))}
+                className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="Standalone">獨立資產（一般物品）</option>
+                <option value="System">系統（可包含多個組件）</option>
+                <option value="Component">內部組件（屬於某個系統）</option>
+                <option value="Accessory">外接配件（可連結資產）</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                選擇此資產的角色類型
+              </p>
             </div>
             
-            {/* 父資產選擇器 */}
-            {!formData.isComposite && (
+            {/* Component: 選擇所屬系統 */}
+            {formData.role === 'Component' && (
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  父資產（選填）
+                  所屬系統 <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.parentId || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, parentId: e.target.value || null }))}
+                  value={formData.systemId || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, systemId: e.target.value || null }))}
                   className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
                 >
-                  <option value="">無（獨立資產）</option>
+                  <option value="">請選擇系統</option>
                   {allAssets
-                    .filter(a => a.isComposite && a.id !== id) // 只顯示組合資產，排除自己
+                    .filter(a => a.role === 'System' && a.id !== id)
                     .map(a => (
                       <option key={a.id} value={a.id}>
                         {a.name}
@@ -358,7 +370,33 @@ export default function AssetForm() {
                     ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  如果這是某個組合資產的零件（如記憶體屬於主機），請選擇父資產
+                  此組件屬於哪個系統（例如：RAM 屬於主機）
+                </p>
+              </div>
+            )}
+            
+            {/* Accessory: 選擇連結資產 */}
+            {formData.role === 'Accessory' && (
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  連結資產（選填）
+                </label>
+                <select
+                  value={formData.linkedAssetId || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, linkedAssetId: e.target.value || null }))}
+                  className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">無（獨立配件）</option>
+                  {allAssets
+                    .filter(a => (a.role === 'Standalone' || a.role === 'System') && a.id !== id)
+                    .map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  可選擇連結到某個資產（例如：USB Hub 連結到筆電）
                 </p>
               </div>
             )}
