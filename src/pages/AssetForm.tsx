@@ -240,30 +240,78 @@ export default function AssetForm() {
                 required
                 className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                預期使用多久？(1年 = 365天, 3年 = 1095天)
-              </p>
               
-              {/* 建議使用天數 */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="text-xs text-muted-foreground">快速選擇：</span>
-                {[
-                  { label: '6個月', days: 180 },
-                  { label: '1年', days: 365 },
-                  { label: '2年', days: 730 },
-                  { label: '3年', days: 1095 },
-                  { label: '5年', days: 1825 }
-                ].map(preset => (
-                  <button
-                    key={preset.days}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, targetLifespan: preset.days.toString() }))}
-                    className="text-xs bg-secondary hover:bg-accent px-2 py-1 rounded transition-colors"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
+              {/* 智能建議：根據價格和每日成本 */}
+              {formData.price && parseFloat(formData.price) > 0 && (
+                <div className="mt-3 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm font-semibold text-blue-400">💡 智能建議</span>
+                    <span className="text-xs text-muted-foreground">
+                      根據你願意承擔的每日成本
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    {(() => {
+                      const price = parseFloat(formData.price);
+                      // 根據價格範圍動態生成建議選項
+                      let dailyCostOptions: number[] = [];
+                      
+                      if (price < 1000) {
+                        // 低價商品：NT$5, 10, 20, 30
+                        dailyCostOptions = [5, 10, 20, 30];
+                      } else if (price < 5000) {
+                        // 中低價：NT$10, 20, 30, 50
+                        dailyCostOptions = [10, 20, 30, 50];
+                      } else if (price < 20000) {
+                        // 中價：NT$20, 30, 50, 100
+                        dailyCostOptions = [20, 30, 50, 100];
+                      } else if (price < 50000) {
+                        // 中高價：NT$30, 50, 100, 150
+                        dailyCostOptions = [30, 50, 100, 150];
+                      } else {
+                        // 高價：NT$50, 100, 200, 300
+                        dailyCostOptions = [50, 100, 200, 300];
+                      }
+                      
+                      return dailyCostOptions.map(dailyCost => {
+                        const suggestedDays = Math.round(price / dailyCost);
+                        const years = (suggestedDays / 365).toFixed(1);
+                        const isSelected = formData.targetLifespan === suggestedDays.toString();
+                        
+                        return (
+                          <button
+                            key={dailyCost}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, targetLifespan: suggestedDays.toString() }))}
+                            className={`relative overflow-hidden text-left p-3 rounded-lg transition-all ${
+                              isSelected 
+                                ? 'bg-primary text-primary-foreground ring-2 ring-primary' 
+                                : 'bg-card hover:bg-accent border'
+                            }`}
+                          >
+                            <div className="text-xs opacity-70 mb-1">每天願付</div>
+                            <div className="text-lg font-bold">NT${dailyCost}</div>
+                            <div className="text-xs opacity-70 mt-1">
+                              = {suggestedDays} 天 ({years} 年)
+                            </div>
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
+                  
+                  <div className="mt-3 text-xs text-center text-muted-foreground">
+                    點擊卡片即可自動填入建議天數
+                  </div>
+                </div>
+              )}
+              
+              {!formData.price && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 填寫購買價格後，會顯示智能建議
+                </p>
+              )}
             </div>
           </div>
           
