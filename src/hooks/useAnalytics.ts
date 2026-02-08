@@ -325,6 +325,30 @@ export function useAnalytics(
       }
     }
 
+    // Insight: Electricity and maintenance costs (v0.4.0)
+    const assetsWithPower = assets.filter(a => 
+      a.status === 'Active' && a.powerWatts > 0 && a.dailyUsageHours > 0
+    );
+    const assetsWithMaintenance = assets.filter(a => 
+      a.status === 'Active' && a.recurringMaintenanceCost > 0
+    );
+    
+    if (assetsWithPower.length > 0 || assetsWithMaintenance.length > 0) {
+      const parts = [];
+      if (assetsWithPower.length > 0) {
+        parts.push(`${assetsWithPower.length} 件資產有電費`);
+      }
+      if (assetsWithMaintenance.length > 0) {
+        parts.push(`${assetsWithMaintenance.length} 件需定期維護`);
+      }
+      
+      insights.push({
+        type: 'info',
+        title: '隱形成本提醒',
+        message: `你有${parts.join('、')}。這些隱形成本會在主頁面顯示，記得納入預算考量。`
+      });
+    }
+
     return {
       monthlyTrends,
       categoryTrends,

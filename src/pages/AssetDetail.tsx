@@ -177,6 +177,100 @@ export default function AssetDetail() {
           </div>
         )}
         
+        {/* v0.4.0 新增：電力規格 */}
+        {(asset.powerWatts > 0 || asset.dailyUsageHours > 0 || asset.recurringMaintenanceCost > 0) && (
+          <div className="bg-card border rounded-lg p-4 mb-4">
+            <h3 className="font-semibold mb-3">⚡ 電力與維護</h3>
+            <div className="space-y-2 text-sm">
+              {asset.powerWatts > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">功率</span>
+                  <span className="font-medium">{asset.powerWatts} W</span>
+                </div>
+              )}
+              {asset.dailyUsageHours > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">每日使用</span>
+                  <span className="font-medium">{asset.dailyUsageHours} 小時</span>
+                </div>
+              )}
+              {details.dailyElectricityCost > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">預估電費</span>
+                  <span className="font-medium text-orange-500">
+                    {formatCurrency(details.dailyElectricityCost * 30, asset.currency)} / 月
+                  </span>
+                </div>
+              )}
+              {asset.recurringMaintenanceCost > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">年度維護</span>
+                  <span className="font-medium">
+                    {formatCurrency(asset.recurringMaintenanceCost, asset.currency)} / 年
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* v0.4.0 新增：子組件列表 */}
+        {asset.isComposite && (
+          <div className="bg-card border rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">🔧 內部組件</h3>
+              <button
+                onClick={() => navigate(`/assets/new?parent=${asset.id}`)}
+                className="text-sm bg-primary text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-opacity"
+              >
+                ＋ 新增組件
+              </button>
+            </div>
+            
+            {details.children.length > 0 ? (
+              <div className="space-y-2">
+                {details.children.map(child => (
+                  <div 
+                    key={child.id}
+                    onClick={() => navigate(`/assets/${child.id}`)}
+                    className="flex items-center justify-between p-3 bg-accent/50 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{categoryEmoji[child.category]}</span>
+                      <div>
+                        <div className="font-medium text-sm">{child.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatCurrency(child.price, child.currency)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      →
+                    </div>
+                  </div>
+                ))}
+                <div className="mt-3 pt-3 border-t text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>組件總價值：</span>
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(
+                        details.children.reduce((sum, c) => sum + c.price, 0),
+                        asset.currency
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                <div className="text-3xl mb-2">📦</div>
+                <p>尚未新增任何組件</p>
+                <p className="text-xs mt-1">點擊上方「新增組件」按鈕開始</p>
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* 維護記錄 */}
         <div className="bg-card border rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between mb-3">

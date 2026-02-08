@@ -1,14 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAsset } from '../hooks/useDatabase';
-import { addAsset, updateAsset } from '../db';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useAsset, useAllAssets } from '../hooks/useDatabase';
+import { addAsset, updateAsset, getSettings } from '../db';
+import { calculateMonthlyElectricityCost } from '../utils/costCalculations';
 import type { AssetCategory, Currency, AssetStatus } from '../types';
 
 export default function AssetForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const existingAsset = useAsset(id);
+  const allAssets = useAllAssets() || [];
   const isEditing = !!id;
+  
+  // 從 URL 取得父資產 ID（用於「新增組件」流程）
+  const parentIdFromUrl = searchParams.get('parent');
+  
+  // 電費單價
+  const [electricityRate, setElectricityRate] = useState(4.0);
+  
+  useEffect(() => {
+    getSettings().then(s => setElectricityRate(s.electricityRate));
+  }, []);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -29,7 +42,7 @@ export default function AssetForm() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // 載入現有資產資料
+  // 載入現有資產資料 或 從 URL 預填父資產
   useEffect(() => {
     if (existingAsset) {
       setFormData({
@@ -48,8 +61,11 @@ export default function AssetForm() {
         dailyUsageHours: existingAsset.dailyUsageHours?.toString() || '0',
         recurringMaintenanceCost: existingAsset.recurringMaintenanceCost?.toString() || '0'
       });
+    } else if (parentIdFromUrl) {
+      // 新增組件時，自動填入父資產
+      setFormData(prev => ({ ...prev, parentId: parentIdFromUrl }));
     }
-  }, [existingAsset]);
+  }, [existingAsset, parentIdFromUrl]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,6 +243,154 @@ export default function AssetForm() {
               <p className="text-xs text-muted-foreground mt-1">
                 預期使用多久？(1年 = 365天, 3年 = 1095天)
               </p>
+            </div>
+          </div>
+          
+          {/* v0.4.0 新增：零部件設定 */}
+          <div className="bg-card border rounded-lg p-4 space-y-4">
+            <h3 className="font-semibold mb-3">🔧 零部件設定</h3>
+            
+            {/* 是否為組合資產 */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isComposite}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isComposite: e.target.checked }))}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium text-sm">這是組合資產（例如：主機、吉他套裝）</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    勾選後，可以在資產詳情頁新增子組件（如：記憶體、SSD）
+                  </p>
+                </div>
+              </label>
+            </div>
+            
+            {/* 父資產選擇器 */}
+            {!formData.isComposite && (
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  父資產（選填）
+                </label>
+                <select
+                  value={formData.parentId || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, parentId: e.target.value || null }))}
+                  className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">無（獨立資產）</option>
+                  {allAssets
+                    .filter(a => a.isComposite && a.id !== id) // 只顯示組合資產，排除自己
+                    .map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  如果這是某個組合資產的零件（如記憶體屬於主機），請選擇父資產
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* v0.4.0 新增：電力規格 */}
+          <div className="bg-card border rounded-lg p-4 space-y-4">
+            <h3 className="font-semibold mb-3">⚡ 電力規格（選填）</h3>
+            <p className="text-xs text-muted-foreground -mt-2 mb-3">
+              用於計算電費成本。如果這是零件，可以留空（電費會計入父資產）
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* 功率 */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  功率（瓦特 W）
+                </label>
+                <input
+                  type="number"
+                  name="powerWatts"
+                  value={formData.powerWatts}
+                  onChange={handleChange}
+                  placeholder="0"
+                  min="0"
+                  step="0.1"
+                  className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  例：筆電 30W，伺服器 100W
+                </p>
+              </div>
+              
+              {/* 每日使用時數 */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  每日使用時數
+                </label>
+                <input
+                  type="number"
+                  name="dailyUsageHours"
+                  value={formData.dailyUsageHours}
+                  onChange={handleChange}
+                  placeholder="0"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  例：24 小時不關機，或 8 小時
+                </p>
+              </div>
+            </div>
+            
+            {/* 預估電費顯示 */}
+            {parseFloat(formData.powerWatts) > 0 && parseFloat(formData.dailyUsageHours) > 0 && (
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                <div className="text-sm font-medium text-orange-400">
+                  💰 預估電費
+                </div>
+                <div className="text-2xl font-bold text-orange-500 mt-1">
+                  NT${Math.round(calculateMonthlyElectricityCost(
+                    parseFloat(formData.powerWatts),
+                    parseFloat(formData.dailyUsageHours),
+                    electricityRate
+                  ))} / 月
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  基於 {electricityRate} 元/度的電價計算
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* v0.4.0 新增：經常性維護成本 */}
+          <div className="bg-card border rounded-lg p-4 space-y-4">
+            <h3 className="font-semibold mb-3">🔧 經常性維護（選填）</h3>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                年度維護成本（NT$）
+              </label>
+              <input
+                type="number"
+                name="recurringMaintenanceCost"
+                value={formData.recurringMaintenanceCost}
+                onChange={handleChange}
+                placeholder="0"
+                min="0"
+                step="1"
+                className="w-full bg-background border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                預估一年需要花多少錢維護？例如：散熱膏、琴弦、保養費等
+              </p>
+              {parseFloat(formData.recurringMaintenanceCost) > 0 && (
+                <p className="text-xs text-green-500 mt-2">
+                  ≈ NT${Math.round(parseFloat(formData.recurringMaintenanceCost) / 12)} / 月
+                </p>
+              )}
             </div>
           </div>
           
