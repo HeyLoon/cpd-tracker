@@ -44,7 +44,7 @@ export default function AssetDetail() {
   const components = details.children.filter(c => c.role === 'Component');
   const accessories = details.children.filter(c => c.role === 'Accessory');
   
-  // 计算组件总价（用于 System）
+  // 計算組件總價（用於 System）
   const componentsTotalPrice = components.reduce((sum, c) => sum + c.price, 0);
   
   const handleDelete = async () => {
@@ -122,7 +122,7 @@ export default function AssetDetail() {
               className="flex items-center gap-2 bg-white/5 border border-slate-800 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
             >
               <Edit className="w-4 h-4" />
-              <span>编辑</span>
+              <span>編輯</span>
             </button>
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function AssetDetail() {
             </div>
             <div>
               <div className="text-slate-500 mb-1">
-                {asset.role === 'System' ? '组件总价' : '购买价格'}
+                {asset.role === 'System' ? '組件總價' : '購買價格'}
               </div>
               <div className="font-semibold text-white">
                 {asset.role === 'System' 
@@ -259,20 +259,20 @@ export default function AssetDetail() {
           </div>
         )}
         
-        {/* v0.5.0 新增：内部组件列表（仅 System 显示）*/}
+        {/* v0.5.0 新增：內部組件列表（僅 System 顯示）*/}
         {asset.role === 'System' && (
           <div className="glass rounded-2xl p-6 mb-4 border border-cyan-500/30 bg-gradient-to-br from-cyan-500/5 to-blue-500/5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Cpu className="w-5 h-5 text-cyan-400" />
-                <h3 className="font-bold text-lg">内部组件</h3>
+                <h3 className="font-bold text-lg">內部組件</h3>
               </div>
               <button
                 onClick={() => navigate(`/assets/new?parent=${asset.id}`)}
                 className="flex items-center gap-2 text-sm bg-cyan-500/20 text-cyan-400 px-3 py-2 rounded-lg hover:bg-cyan-500/30 transition-colors border border-cyan-500/30"
               >
                 <Plus className="w-4 h-4" />
-                <span>新增组件</span>
+                <span>新增組件</span>
               </button>
             </div>
             
@@ -300,7 +300,7 @@ export default function AssetDetail() {
                 ))}
                 <div className="mt-4 pt-4 border-t border-slate-800">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-400">组件总价值</span>
+                    <span className="text-sm text-slate-400">組件總價值</span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-sm text-slate-400">NT$</span>
                       <span className="text-2xl font-black text-cyan-400">
@@ -313,8 +313,8 @@ export default function AssetDetail() {
             ) : (
               <div className="text-center py-8 text-slate-500">
                 <Cpu className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="mb-1">尚未添加任何组件</p>
-                <p className="text-xs">点击上方「新增组件」按钮开始组装</p>
+                <p className="mb-1">尚未添加任何組件</p>
+                <p className="text-xs">點擊上方「新增組件」按鈕開始組裝</p>
               </div>
             )}
           </div>
@@ -418,15 +418,15 @@ export default function AssetDetail() {
               onClick={() => setShowDeleteConfirm(true)}
               className="w-full bg-red-500/10 text-red-400 px-4 py-3 rounded-lg hover:bg-red-500/20 transition-colors border border-red-500/30"
             >
-              删除资产
+              刪除資產
             </button>
           ) : (
             <div className="space-y-3">
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                <p className="text-sm text-slate-300 mb-2">确定要删除此资产吗？此操作无法撤销。</p>
+                <p className="text-sm text-slate-300 mb-2">確定要刪除此資產嗎？此操作無法撤銷。</p>
                 {asset.role === 'System' && components.length > 0 && (
                   <p className="text-xs text-red-400 font-medium">
-                    ⚠️ 警告：此系统包含 {components.length} 个组件，删除后所有组件也会一并删除。
+                    ⚠️ 警告：此系統包含 {components.length} 個組件，刪除後所有組件也會一併刪除。
                   </p>
                 )}
               </div>
@@ -441,7 +441,7 @@ export default function AssetDetail() {
                   onClick={handleDelete}
                   className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
                 >
-                  确定删除
+                  確定刪除
                 </button>
               </div>
             </div>

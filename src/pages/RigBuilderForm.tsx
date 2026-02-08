@@ -15,7 +15,7 @@ export default function RigBuilderForm() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // System 基本资料
+  // System 基本資料
   const [systemData, setSystemData] = useState({
     name: '',
     category: 'Tech' as AssetCategory,
@@ -57,20 +57,20 @@ export default function RigBuilderForm() {
     setIsSubmitting(true);
     
     try {
-      // 验证：至少有一个组件有名称
+      // 驗證：至少有一個組件有名稱
       const validComponents = components.filter(c => c.name.trim() !== '');
       if (validComponents.length === 0) {
-        alert('请至少添加一个组件');
+        alert('請至少新增一個組件');
         setIsSubmitting(false);
         return;
       }
       
-      // 1. 创建 System
+      // 1. 建立 System
       const systemId = await addAsset({
         name: systemData.name,
         category: systemData.category,
         purchaseDate: new Date(systemData.purchaseDate),
-        price: 0, // System 的价格会从组件自动计算
+        price: 0, // System 的價格會從組件自動計算
         currency: systemData.currency,
         targetLifespan: parseInt(systemData.targetLifespan),
         status: 'Active',
@@ -84,11 +84,11 @@ export default function RigBuilderForm() {
         recurringMaintenanceCost: parseFloat(systemData.recurringMaintenanceCost)
       });
       
-      // 2. 创建所有 Components
+      // 2. 建立所有 Components
       for (const comp of validComponents) {
         await addAsset({
           name: comp.name,
-          category: systemData.category, // 继承 System 的分类
+          category: systemData.category, // 繼承 System 的分類
           purchaseDate: new Date(systemData.purchaseDate),
           price: parseFloat(comp.price) || 0,
           currency: systemData.currency,
@@ -105,17 +105,17 @@ export default function RigBuilderForm() {
         });
       }
       
-      // 导航到系统详情页
+      // 導航到系統詳情頁
       navigate(`/assets/${systemId}`);
     } catch (error) {
-      console.error('创建系统失败:', error);
-      alert('创建失败，请重试');
+      console.error('建立系統失敗:', error);
+      alert('建立失敗，請重試');
     } finally {
       setIsSubmitting(false);
     }
   };
   
-  // 计算总价
+  // 計算總價
   const totalPrice = components.reduce((sum, c) => {
     const price = parseFloat(c.price) || 0;
     return sum + price;
@@ -124,7 +124,7 @@ export default function RigBuilderForm() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-2xl mx-auto p-4">
-        {/* 标题 */}
+        {/* 標題 */}
         <div className="mb-6">
           <button
             onClick={() => navigate(-1)}
@@ -139,30 +139,30 @@ export default function RigBuilderForm() {
               <Server className="w-6 h-6 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">组装系统</h1>
-              <p className="text-slate-400 text-sm">批量建立系统与组件</p>
+              <h1 className="text-3xl font-bold">組裝系統</h1>
+              <p className="text-slate-400 text-sm">批量建立系統與組件</p>
             </div>
           </div>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: 系统基本资料 */}
+          {/* Step 1: 系統基本資料 */}
           <div className="glass rounded-2xl p-6 border border-slate-800">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">1</span>
-              系统资料
+              系統資料
             </h2>
             
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  系统名称 <span className="text-red-500">*</span>
+                  系統名稱 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={systemData.name}
                   onChange={(e) => setSystemData({ ...systemData, name: e.target.value })}
-                  placeholder="例如：游戏主机、Orange Pi 集群"
+                  placeholder="例如：遊戲主機、Orange Pi 叢集"
                   className="w-full bg-background border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
@@ -170,21 +170,21 @@ export default function RigBuilderForm() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">分类</label>
+                  <label className="block text-sm font-medium mb-2">分類</label>
                   <select
                     value={systemData.category}
                     onChange={(e) => setSystemData({ ...systemData, category: e.target.value as AssetCategory })}
                     className="w-full bg-background border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="Tech">科技</option>
-                    <option value="Music">音乐</option>
+                    <option value="Music">音樂</option>
                     <option value="Life">生活</option>
                     <option value="Others">其他</option>
                   </select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">购买日期</label>
+                  <label className="block text-sm font-medium mb-2">購買日期</label>
                   <input
                     type="date"
                     value={systemData.purchaseDate}
@@ -196,20 +196,20 @@ export default function RigBuilderForm() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">币别</label>
+                  <label className="block text-sm font-medium mb-2">幣別</label>
                   <select
                     value={systemData.currency}
                     onChange={(e) => setSystemData({ ...systemData, currency: e.target.value as Currency })}
                     className="w-full bg-background border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="TWD">新台币 (NT$)</option>
+                    <option value="TWD">新台幣 (NT$)</option>
                     <option value="USD">美元 ($)</option>
-                    <option value="JPY">日元 (¥)</option>
+                    <option value="JPY">日圓 (¥)</option>
                   </select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">目标寿命（天）</label>
+                  <label className="block text-sm font-medium mb-2">目標壽命（天）</label>
                   <input
                     type="number"
                     value={systemData.targetLifespan}
@@ -220,7 +220,7 @@ export default function RigBuilderForm() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">备注（选填）</label>
+                <label className="block text-sm font-medium mb-2">備註（選填）</label>
                 <textarea
                   value={systemData.notes}
                   onChange={(e) => setSystemData({ ...systemData, notes: e.target.value })}
@@ -231,11 +231,11 @@ export default function RigBuilderForm() {
             </div>
           </div>
           
-          {/* Step 2: 组件列表 */}
+          {/* Step 2: 組件列表 */}
           <div className="glass rounded-2xl p-6 border border-slate-800">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">2</span>
-              组件列表
+              組件列表
             </h2>
             
             <div className="space-y-3 mb-4">
@@ -247,7 +247,7 @@ export default function RigBuilderForm() {
                         type="text"
                         value={comp.name}
                         onChange={(e) => handleComponentChange(comp.id, 'name', e.target.value)}
-                        placeholder={`组件 ${index + 1} 名称（例如：RAM 16GB、CPU i5）`}
+                        placeholder={`組件 ${index + 1} 名稱（例如：RAM 16GB、CPU i5）`}
                         className="w-full bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                       
@@ -256,14 +256,14 @@ export default function RigBuilderForm() {
                           type="number"
                           value={comp.price}
                           onChange={(e) => handleComponentChange(comp.id, 'price', e.target.value)}
-                          placeholder="价格"
+                          placeholder="價格"
                           className="w-full bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <input
                           type="number"
                           value={comp.targetLifespan}
                           onChange={(e) => handleComponentChange(comp.id, 'targetLifespan', e.target.value)}
-                          placeholder="寿命（天）"
+                          placeholder="壽命（天）"
                           className="w-full bg-background border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                       </div>
@@ -289,13 +289,13 @@ export default function RigBuilderForm() {
               className="w-full py-3 border-2 border-dashed border-slate-700 rounded-lg text-slate-400 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              <span>新增组件</span>
+              <span>新增組件</span>
             </button>
             
-            {/* 总价显示 */}
+            {/* 總價顯示 */}
             <div className="mt-4 p-4 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/20">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400">系统总价</span>
+                <span className="text-sm text-slate-400">系統總價</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm text-slate-400">NT$</span>
                   <span className="text-2xl font-black text-cyan-400">{totalPrice.toLocaleString()}</span>
@@ -304,11 +304,11 @@ export default function RigBuilderForm() {
             </div>
           </div>
           
-          {/* Step 3: 电力规格（选填）*/}
+          {/* Step 3: 電力規格（選填）*/}
           <div className="glass rounded-2xl p-6 border border-slate-800">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">3</span>
-              电力规格（选填）
+              電力規格（選填）
             </h2>
             
             <div className="grid grid-cols-2 gap-4">
@@ -324,7 +324,7 @@ export default function RigBuilderForm() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">每日使用时数</label>
+                <label className="block text-sm font-medium mb-2">每日使用時數</label>
                 <input
                   type="number"
                   value={systemData.dailyUsageHours}
@@ -336,7 +336,7 @@ export default function RigBuilderForm() {
             </div>
             
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-2">年度维护成本</label>
+              <label className="block text-sm font-medium mb-2">年度維護成本</label>
               <input
                 type="number"
                 value={systemData.recurringMaintenanceCost}
@@ -344,7 +344,7 @@ export default function RigBuilderForm() {
                 placeholder="0"
                 className="w-full bg-background border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <p className="text-xs text-slate-500 mt-1">例如：散热膏、定期保养等固定支出</p>
+              <p className="text-xs text-slate-500 mt-1">例如：散熱膏、定期保養等固定支出</p>
             </div>
           </div>
           
@@ -362,7 +362,7 @@ export default function RigBuilderForm() {
               disabled={isSubmitting}
               className="flex-1 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {isSubmitting ? '创建中...' : '创建系统'}
+              {isSubmitting ? '建立中...' : '建立系統'}
             </button>
           </div>
         </form>

@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { useAllAssets, useAllSubscriptions } from '../hooks/useDatabase';
 import { useCostCalculations, formatCurrency } from '../hooks/useCostCalculations';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { db } from '../db';
 import { getCategoryLabel } from '../utils/costCalculations';
+import { seedComprehensiveTestData } from '../testData';
+import { runPerformanceTests, quickPerformanceCheck } from '../performanceTest';
 import { 
   LayoutDashboard, 
   Settings, 
@@ -44,147 +45,40 @@ function PriceDisplay({ amount, size = 'default', currency = 'TWD' }: {
   );
 }
 
-async function addTestData() {
-  const serverId = crypto.randomUUID();
-  await db.assets.bulkAdd([
-    {
-      id: serverId,
-      name: 'Orange Pi 5 Plus 主機',
-      category: 'Tech',
-      purchaseDate: new Date('2024-01-15'),
-      price: 3500,
-      currency: 'TWD',
-      maintenanceLog: [{ date: new Date('2024-06-10'), note: '更換散熱膏', cost: 200 }],
-      targetLifespan: 1095,
-      status: 'Active',
-      notes: '用來跑各種服務的小主機',
-      role: 'System',
-      systemId: null,
-      linkedAssetId: null,
-      powerWatts: 15,
-      dailyUsageHours: 24,
-      recurringMaintenanceCost: 300,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: '記憶體 16GB DDR5',
-      category: 'Tech',
-      purchaseDate: new Date('2024-01-15'),
-      price: 1200,
-      currency: 'TWD',
-      maintenanceLog: [],
-      targetLifespan: 1095,
-      status: 'Active',
-      notes: '',
-      role: 'Component',
-      systemId: serverId,
-      linkedAssetId: null,
-      powerWatts: 0,
-      dailyUsageHours: 0,
-      recurringMaintenanceCost: 0,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'NVMe SSD 256GB',
-      category: 'Tech',
-      purchaseDate: new Date('2024-01-15'),
-      price: 800,
-      currency: 'TWD',
-      maintenanceLog: [],
-      targetLifespan: 1095,
-      status: 'Active',
-      notes: '',
-      role: 'Component',
-      systemId: serverId,
-      linkedAssetId: null,
-      powerWatts: 0,
-      dailyUsageHours: 0,
-      recurringMaintenanceCost: 0,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'Yamaha F310 吉他',
-      category: 'Music',
-      purchaseDate: new Date('2023-08-20'),
-      price: 4500,
-      currency: 'TWD',
-      maintenanceLog: [{ date: new Date('2024-01-05'), note: '更換琴弦', cost: 350 }],
-      targetLifespan: 3650,
-      status: 'Active',
-      notes: '初學者練習吉他',
-      role: 'Standalone',
-      systemId: null,
-      linkedAssetId: null,
-      powerWatts: 0,
-      dailyUsageHours: 0,
-      recurringMaintenanceCost: 500,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'MacBook Pro M1',
-      category: 'Tech',
-      purchaseDate: new Date('2022-03-10'),
-      price: 45000,
-      currency: 'TWD',
-      maintenanceLog: [],
-      targetLifespan: 1825,
-      status: 'Active',
-      notes: '主力開發機器',
-      role: 'Standalone',
-      systemId: null,
-      linkedAssetId: null,
-      powerWatts: 30,
-      dailyUsageHours: 10,
-      recurringMaintenanceCost: 0,
-    }
-  ]);
-  
-  await db.subscriptions.bulkAdd([
-    {
-      id: crypto.randomUUID(),
-      name: 'Spotify Premium',
-      billingCycle: 'Monthly',
-      cost: 149,
-      currency: 'TWD',
-      startDate: new Date('2023-01-01'),
-      category: 'Entertainment',
-      status: 'Active',
-      notes: '音樂串流服務'
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'Vultr VPS',
-      billingCycle: 'Monthly',
-      cost: 180,
-      currency: 'TWD',
-      startDate: new Date('2023-06-15'),
-      category: 'Service',
-      status: 'Active',
-      notes: '用來跑網站的 VPS'
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'ChatGPT Plus',
-      billingCycle: 'Monthly',
-      cost: 600,
-      currency: 'TWD',
-      startDate: new Date('2024-01-01'),
-      category: 'Software',
-      status: 'Active',
-      notes: 'AI 助手訂閱'
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'Netflix',
-      billingCycle: 'Quarterly',
-      cost: 1050,
-      currency: 'TWD',
-      startDate: new Date('2022-09-01'),
-      category: 'Entertainment',
-      status: 'Active',
-      notes: '影片串流服務（季繳優惠）'
-    }
-  ]);
+/**
+ * 載入完整測試資料
+ */
+async function loadTestData() {
+  try {
+    await seedComprehensiveTestData();
+    alert('✅ 測試資料載入成功！請檢查控制台查看詳細統計。');
+    window.location.reload();
+  } catch (error) {
+    console.error('載入測試資料失敗:', error);
+    alert('❌ 載入失敗，請檢查控制台。');
+  }
+}
+
+/**
+ * 執行性能測試
+ */
+async function runTests() {
+  console.clear();
+  try {
+    await runPerformanceTests();
+    alert('✅ 性能測試完成！請查看控制台檢視詳細報告。');
+  } catch (error) {
+    console.error('性能測試失敗:', error);
+    alert('❌ 測試失敗，請檢查控制台。');
+  }
+}
+
+/**
+ * 快速檢查
+ */
+async function quickCheck() {
+  console.clear();
+  await quickPerformanceCheck();
 }
 
 export default function Dashboard() {
@@ -447,12 +341,43 @@ export default function Dashboard() {
             <p className="text-sm text-slate-400 mb-6">
               新增你的第一個資產或訂閱，開始追蹤每日成本
             </p>
-            <button
-              onClick={() => addTestData()}
-              className="px-6 py-3 bg-gradient-to-r from-primary to-cyan-500 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/30"
-            >
-              新增測試資料
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={loadTestData}
+                className="px-6 py-3 bg-gradient-to-r from-primary to-cyan-500 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/30"
+              >
+                載入完整測試資料
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== DEV TOOLS (Show when data exists) ========== */}
+      {chartData.length > 0 && import.meta.env.DEV && (
+        <div className="max-w-4xl mx-auto px-6 mt-6">
+          <div className="glass rounded-xl p-4 border border-slate-800">
+            <h4 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">開發工具</h4>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={quickCheck}
+                className="px-4 py-2 bg-blue-500/20 text-blue-400 text-sm font-medium rounded-lg hover:bg-blue-500/30 transition-colors border border-blue-500/30"
+              >
+                快速檢查
+              </button>
+              <button
+                onClick={runTests}
+                className="px-4 py-2 bg-purple-500/20 text-purple-400 text-sm font-medium rounded-lg hover:bg-purple-500/30 transition-colors border border-purple-500/30"
+              >
+                執行性能測試
+              </button>
+              <button
+                onClick={loadTestData}
+                className="px-4 py-2 bg-green-500/20 text-green-400 text-sm font-medium rounded-lg hover:bg-green-500/30 transition-colors border border-green-500/30"
+              >
+                重新載入測試資料
+              </button>
+            </div>
           </div>
         </div>
       )}
