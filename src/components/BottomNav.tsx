@@ -1,57 +1,46 @@
 import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Package, CreditCard, PieChart } from 'lucide-react';
 
 interface NavItem {
   path: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
 }
 
 const navItems: NavItem[] = [
-  { path: '/', icon: '🏠', label: '首頁' },
-  { path: '/assets', icon: '📦', label: '資產' },
-  { path: '/subscriptions', icon: '🔄', label: '訂閱' },
-  { path: '/analytics', icon: '📊', label: '分析' },
+  { path: '/', icon: LayoutDashboard, label: '首頁' },
+  { path: '/assets', icon: Package, label: '資產' },
+  { path: '/subscriptions', icon: CreditCard, label: '訂閱' },
+  { path: '/analytics', icon: PieChart, label: '分析' },
 ];
 
 export default function BottomNav() {
   const location = useLocation();
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-t border-slate-800">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="flex justify-around items-center h-20">
+        <div className="flex justify-around items-center h-16">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
+            const Icon = item.icon;
             
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className="relative flex flex-col items-center justify-center gap-1 px-6 py-3 rounded-xl transition-all"
+                className={`
+                  flex flex-col items-center justify-center gap-1 px-6 py-2 rounded-lg transition-all
+                  ${isActive ? 'text-primary' : 'text-slate-500 hover:text-slate-300'}
+                `}
               >
-                {/* Active indicator */}
-                {isActive && (
-                  <div className="absolute inset-0 bg-primary/10 rounded-xl border border-primary/30" />
-                )}
-                
-                {/* Icon with glow effect when active */}
-                <span 
-                  className={`relative text-2xl transition-all ${
-                    isActive ? 'scale-110' : 'scale-100 opacity-60'
-                  }`}
-                  style={isActive ? {
-                    filter: 'drop-shadow(0 0 8px rgba(14, 165, 233, 0.5))'
-                  } : undefined}
-                >
-                  {item.icon}
+                <Icon 
+                  className={`w-5 h-5 transition-all ${isActive ? 'scale-110' : 'scale-100'}`}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+                <span className={`text-[10px] font-semibold uppercase tracking-wider ${isActive ? '' : 'opacity-60'}`}>
+                  {item.label}
                 </span>
-                
-                {/* Label - only show when active */}
-                {isActive && (
-                  <span className="relative text-[10px] font-bold text-primary uppercase tracking-wider">
-                    {item.label}
-                  </span>
-                )}
               </Link>
             );
           })}
