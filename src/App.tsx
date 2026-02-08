@@ -6,6 +6,8 @@ import Assets from './pages/Assets';
 import AssetForm from './pages/AssetForm';
 import AssetDetail from './pages/AssetDetail';
 import Subscriptions from './pages/Subscriptions';
+import SubscriptionForm from './pages/SubscriptionForm';
+import SubscriptionDetail from './pages/SubscriptionDetail';
 import Analytics from './pages/Analytics';
 
 function App() {
@@ -24,6 +26,9 @@ function App() {
           <Route path="/assets/:id" element={<AssetDetail />} />
           <Route path="/assets/:id/edit" element={<AssetForm />} />
           <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/subscriptions/new" element={<SubscriptionForm />} />
+          <Route path="/subscriptions/:id" element={<SubscriptionDetail />} />
+          <Route path="/subscriptions/:id/edit" element={<SubscriptionForm />} />
           <Route path="/analytics" element={<Analytics />} />
         </Routes>
         <BottomNav />
