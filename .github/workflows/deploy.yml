@@ -35,8 +35,7 @@ jobs:
       
       - name: Create .env file
         run: |
-          echo "VITE_POCKETBASE_URL=" > .env
-          echo "# PocketBase URL 將在後端部署完成後配置" >> .env
+          echo "VITE_POCKETBASE_URL=${{ secrets.VITE_POCKETBASE_URL || '' }}" > .env
       
       - name: Build
         run: bun run build
