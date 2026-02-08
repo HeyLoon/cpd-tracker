@@ -125,7 +125,7 @@ export default function Assets() {
         {filteredAssets.length > 0 ? (
           <div className="space-y-3">
             {filteredAssets.map(asset => (
-              <AssetCard key={asset.id} asset={asset} />
+              <AssetCard key={asset.id} asset={asset} allAssets={assets || []} />
             ))}
           </div>
         ) : (

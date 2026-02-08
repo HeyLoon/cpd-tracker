@@ -1,16 +1,24 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { differenceInDays } from 'date-fns';
-import type { PhysicalAsset, Subscription } from '../types';
+import type { PhysicalAsset, Subscription, InvisibleCosts } from '../types';
+import { 
+  calculateSubscriptionDailyCost,
+  calculateAssetElectricityCostRecursive
+} from '../utils/costCalculations';
+import { getSettings } from '../db';
 
 export interface CostCalculations {
-  // 總每日燃燒率
+  // 總每日燃燒率（包含隱形成本）
   totalDailyBurn: number;
   
-  // 資產每日成本
+  // 資產每日成本（折舊）
   assetsDailyCost: number;
   
   // 訂閱每日成本
   subscriptionsDailyCost: number;
+  
+  // v0.4.0 新增：隱形成本
+  invisibleCosts: InvisibleCosts;
   
   // 每月總支出
   totalMonthlyCost: number;
@@ -29,10 +37,12 @@ export interface CostCalculations {
 export interface AssetCalculation {
   asset: PhysicalAsset;
   daysOwned: number;
-  dailyCost: number;
-  totalCost: number;
+  dailyCost: number; // 折舊成本
+  dailyElectricityCost: number; // v0.4.0 新增：電費
+  totalCost: number; // 含子組件的總成本
   progressPercentage: number;
   remainingDays: number;
+  children: PhysicalAsset[]; // v0.4.0 新增：子組件列表
 }
 
 export interface SubscriptionCalculation {
@@ -44,70 +54,67 @@ export interface SubscriptionCalculation {
 }
 
 /**
- * 核心計算 Hook - 計算所有成本相關數據
+ * v0.4.0 升級：核心計算 Hook - 支援親子關係、電費、隱形成本
  */
 export function useCostCalculations(
   assets: PhysicalAsset[],
   subscriptions: Subscription[]
 ): CostCalculations {
+  const [electricityRate, setElectricityRate] = useState(4.0);
+  
+  // 載入電費設定
+  useEffect(() => {
+    getSettings().then(settings => {
+      setElectricityRate(settings.electricityRate);
+    });
+  }, []);
+  
   return useMemo(() => {
     const now = new Date();
+    const activeAssets = assets.filter(asset => asset.status === 'Active');
+    const activeSubscriptions = subscriptions.filter(sub => sub.status === 'Active');
     
-    // 計算資產每日成本
-    const assetsDailyCost = assets
-      .filter(asset => asset.status === 'Active')
-      .reduce((total, asset) => {
-        const daysOwned = Math.max(1, differenceInDays(now, asset.purchaseDate));
-        const maintenanceCost = asset.maintenanceLog.reduce((sum, log) => sum + log.cost, 0);
-        const totalCost = asset.price + maintenanceCost;
-        const dailyCost = totalCost / daysOwned;
-        return total + dailyCost;
-      }, 0);
+    // === 1. 計算資產折舊成本（只計算頂層資產，避免重複） ===
+    const topLevelAssets = activeAssets.filter(a => a.parentId === null);
+    const assetsDailyCost = topLevelAssets.reduce((total, asset) => {
+      return total + calculateAssetDepreciationRecursive(asset, activeAssets, now);
+    }, 0);
     
-    // 計算訂閱每日成本
-    const subscriptionsDailyCost = subscriptions
-      .filter(sub => sub.status === 'Active')
-      .reduce((total, sub) => {
-        const dailyCost = sub.billingCycle === 'Monthly' 
-          ? sub.cost / 30 
-          : sub.cost / 365;
-        return total + dailyCost;
-      }, 0);
+    // === 2. 計算訂閱每日成本（支援季度） ===
+    const subscriptionsDailyCost = activeSubscriptions.reduce((total, sub) => {
+      return total + calculateSubscriptionDailyCost(sub);
+    }, 0);
     
-    // 總每日燃燒率
-    const totalDailyBurn = assetsDailyCost + subscriptionsDailyCost;
+    // === 3. 計算隱形成本（同步版本，用於立即顯示） ===
+    const invisibleCosts = calculateInvisibleCostsSync(
+      activeAssets,
+      activeSubscriptions,
+      electricityRate
+    );
     
-    // 每月和每年總支出
+    // === 4. 總每日燃燒率 = 折舊 + 隱形成本 ===
+    const totalDailyBurn = assetsDailyCost + invisibleCosts.totalDaily;
+    
+    // === 5. 月度/年度支出 ===
     const totalMonthlyCost = totalDailyBurn * 30;
     const totalYearlyCost = totalDailyBurn * 365;
     
-    // 計算各分類的每日成本
+    // === 6. 計算各分類的每日成本 ===
     const categoryMap = new Map<string, number>();
     
-    // 資產分類成本
-    assets
-      .filter(asset => asset.status === 'Active')
-      .forEach(asset => {
-        const daysOwned = Math.max(1, differenceInDays(now, asset.purchaseDate));
-        const maintenanceCost = asset.maintenanceLog.reduce((sum, log) => sum + log.cost, 0);
-        const totalCost = asset.price + maintenanceCost;
-        const dailyCost = totalCost / daysOwned;
-        
-        const current = categoryMap.get(asset.category) || 0;
-        categoryMap.set(asset.category, current + dailyCost);
-      });
+    // 資產分類成本（只計算頂層）
+    topLevelAssets.forEach(asset => {
+      const dailyCost = calculateAssetDepreciationRecursive(asset, activeAssets, now);
+      const current = categoryMap.get(asset.category) || 0;
+      categoryMap.set(asset.category, current + dailyCost);
+    });
     
     // 訂閱分類成本
-    subscriptions
-      .filter(sub => sub.status === 'Active')
-      .forEach(sub => {
-        const dailyCost = sub.billingCycle === 'Monthly' 
-          ? sub.cost / 30 
-          : sub.cost / 365;
-        
-        const current = categoryMap.get(sub.category) || 0;
-        categoryMap.set(sub.category, current + dailyCost);
-      });
+    activeSubscriptions.forEach(sub => {
+      const dailyCost = calculateSubscriptionDailyCost(sub);
+      const current = categoryMap.get(sub.category) || 0;
+      categoryMap.set(sub.category, current + dailyCost);
+    });
     
     // 定義分類顏色
     const categoryColors: { [key: string]: string } = {
@@ -132,22 +139,115 @@ export function useCostCalculations(
       totalDailyBurn,
       assetsDailyCost,
       subscriptionsDailyCost,
+      invisibleCosts,
       totalMonthlyCost,
       totalYearlyCost,
       costByCategory
     };
-  }, [assets, subscriptions]);
+  }, [assets, subscriptions, electricityRate]);
 }
 
 /**
- * 計算單一資產的詳細資訊
+ * v0.4.0 新增：遞迴計算資產及子組件的折舊成本
  */
-export function calculateAssetDetails(asset: PhysicalAsset): AssetCalculation {
-  const now = new Date();
+function calculateAssetDepreciationRecursive(
+  asset: PhysicalAsset,
+  allAssets: PhysicalAsset[],
+  now: Date
+): number {
+  // 本身的折舊
   const daysOwned = Math.max(1, differenceInDays(now, asset.purchaseDate));
   const maintenanceCost = asset.maintenanceLog.reduce((sum, log) => sum + log.cost, 0);
   const totalCost = asset.price + maintenanceCost;
+  let dailyCost = totalCost / daysOwned;
+  
+  // 如果是組合資產，加上所有子組件的折舊
+  if (asset.isComposite) {
+    const children = allAssets.filter(a => a.parentId === asset.id);
+    for (const child of children) {
+      dailyCost += calculateAssetDepreciationRecursive(child, allAssets, now);
+    }
+  }
+  
+  return dailyCost;
+}
+
+/**
+ * v0.4.0 新增：同步版本的隱形成本計算
+ */
+function calculateInvisibleCostsSync(
+  assets: PhysicalAsset[],
+  subscriptions: Subscription[],
+  electricityRate: number
+): InvisibleCosts {
+  // 1. 電費總計（月）
+  let totalElectricityDaily = 0;
+  const topLevelAssets = assets.filter(a => a.parentId === null);
+  for (const asset of topLevelAssets) {
+    totalElectricityDaily += calculateAssetElectricityCostRecursive(
+      asset,
+      assets,
+      electricityRate
+    );
+  }
+  const totalElectricityCost = totalElectricityDaily * 30;
+  
+  // 2. 訂閱總計（月）
+  const totalSubscriptionsCost = subscriptions.reduce((sum, sub) => {
+    return sum + (calculateSubscriptionDailyCost(sub) * 30);
+  }, 0);
+  
+  // 3. 經常性維護（月）
+  const totalRecurringMaintenance = assets.reduce((sum, asset) => {
+    return sum + (asset.recurringMaintenanceCost / 12);
+  }, 0);
+  
+  // 4. 總計
+  const totalMonthly = totalElectricityCost + totalSubscriptionsCost + totalRecurringMaintenance;
+  const totalDaily = totalMonthly / 30;
+  
+  return {
+    totalElectricityCost,
+    totalSubscriptionsCost,
+    totalRecurringMaintenance,
+    totalMonthly,
+    totalDaily
+  };
+}
+
+/**
+ * v0.4.0 升級：計算單一資產的詳細資訊（含子組件）
+ */
+export function calculateAssetDetails(
+  asset: PhysicalAsset,
+  allAssets: PhysicalAsset[],
+  electricityRate: number
+): AssetCalculation {
+  const now = new Date();
+  const daysOwned = Math.max(1, differenceInDays(now, asset.purchaseDate));
+  const maintenanceCost = asset.maintenanceLog.reduce((sum, log) => sum + log.cost, 0);
+  
+  // 本身成本
+  let totalCost = asset.price + maintenanceCost;
+  
+  // 子組件
+  const children = allAssets.filter(a => a.parentId === asset.id);
+  
+  // 遞迴加總子組件成本
+  for (const child of children) {
+    const childDetail = calculateAssetDetails(child, allAssets, electricityRate);
+    totalCost += childDetail.totalCost;
+  }
+  
+  // 折舊成本
   const dailyCost = totalCost / daysOwned;
+  
+  // 電費（含子組件）
+  const dailyElectricityCost = calculateAssetElectricityCostRecursive(
+    asset,
+    allAssets,
+    electricityRate
+  );
   
   const progressPercentage = Math.min(100, (daysOwned / asset.targetLifespan) * 100);
   const remainingDays = Math.max(0, asset.targetLifespan - daysOwned);
@@ -156,14 +256,16 @@ export function calculateAssetDetails(asset: PhysicalAsset): AssetCalculation {
     asset,
     daysOwned,
     dailyCost,
+    dailyElectricityCost,
     totalCost,
     progressPercentage,
-    remainingDays
+    remainingDays,
+    children
   };
 }
 
 /**
- * 計算單一訂閱的詳細資訊
+ * v0.4.0 升級：計算單一訂閱的詳細資訊（支援季度）
  */
 export function calculateSubscriptionDetails(subscription: Subscription): SubscriptionCalculation {
   const now = new Date();
@@ -174,10 +276,7 @@ export function calculateSubscriptionDetails(subscription: Subscription): Subscr
   const daysActive = Math.max(1, differenceInDays(endDate, subscription.startDate));
   const monthsActive = daysActive / 30;
   
-  const dailyCost = subscription.billingCycle === 'Monthly'
-    ? subscription.cost / 30
-    : subscription.cost / 365;
-  
+  const dailyCost = calculateSubscriptionDailyCost(subscription);
   const totalSpent = dailyCost * daysActive;
   
   return {
@@ -190,7 +289,7 @@ export function calculateSubscriptionDetails(subscription: Subscription): Subscr
 }
 
 /**
- * 格式化貨幣顯示
+ * 格式化貨幣顯示（保留向後兼容）
  */
 export function formatCurrency(amount: number, currency: string = 'TWD'): string {
   const currencySymbols: { [key: string]: string } = {

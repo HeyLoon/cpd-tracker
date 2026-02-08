@@ -18,7 +18,13 @@ export default function AssetForm() {
     currency: 'TWD' as Currency,
     targetLifespan: '1095', // 3年
     status: 'Active' as AssetStatus,
-    notes: ''
+    notes: '',
+    // v0.4.0 新增
+    parentId: null as string | null,
+    isComposite: false,
+    powerWatts: '0',
+    dailyUsageHours: '0',
+    recurringMaintenanceCost: '0'
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +40,13 @@ export default function AssetForm() {
         currency: existingAsset.currency,
         targetLifespan: existingAsset.targetLifespan.toString(),
         status: existingAsset.status,
-        notes: existingAsset.notes || ''
+        notes: existingAsset.notes || '',
+        // v0.4.0
+        parentId: existingAsset.parentId,
+        isComposite: existingAsset.isComposite,
+        powerWatts: existingAsset.powerWatts?.toString() || '0',
+        dailyUsageHours: existingAsset.dailyUsageHours?.toString() || '0',
+        recurringMaintenanceCost: existingAsset.recurringMaintenanceCost?.toString() || '0'
       });
     }
   }, [existingAsset]);
@@ -54,7 +66,13 @@ export default function AssetForm() {
         status: formData.status,
         notes: formData.notes,
         maintenanceLog: existingAsset?.maintenanceLog || [],
-        soldPrice: existingAsset?.soldPrice
+        soldPrice: existingAsset?.soldPrice,
+        // v0.4.0 新增
+        parentId: formData.parentId,
+        isComposite: formData.isComposite,
+        powerWatts: parseFloat(formData.powerWatts),
+        dailyUsageHours: parseFloat(formData.dailyUsageHours),
+        recurringMaintenanceCost: parseFloat(formData.recurringMaintenanceCost)
       };
       
       if (isEditing && id) {

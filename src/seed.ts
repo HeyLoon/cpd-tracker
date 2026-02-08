@@ -10,11 +10,12 @@ export async function seedTestData() {
   await db.assets.clear();
   await db.subscriptions.clear();
   
-  // 新增測試資產
+  // 新增測試資產（v0.4.0 含親子關係和電力規格）
+  const serverId = crypto.randomUUID();
   const assets = [
     {
-      id: crypto.randomUUID(),
-      name: 'Orange Pi 5 Plus',
+      id: serverId,
+      name: 'Orange Pi 5 Plus 主機',
       category: 'Tech' as const,
       purchaseDate: new Date('2024-01-15'),
       price: 3500,
@@ -28,7 +29,31 @@ export async function seedTestData() {
       ],
       targetLifespan: 1095, // 3年
       status: 'Active' as const,
-      notes: '用來跑各種服務的小主機'
+      notes: '用來跑各種服務的小主機',
+      // v0.4.0
+      parentId: null,
+      isComposite: true,
+      powerWatts: 15,
+      dailyUsageHours: 24,
+      recurringMaintenanceCost: 300
+    },
+    {
+      id: crypto.randomUUID(),
+      name: '記憶體 16GB DDR5',
+      category: 'Tech' as const,
+      purchaseDate: new Date('2024-01-15'),
+      price: 1200,
+      currency: 'TWD' as const,
+      maintenanceLog: [],
+      targetLifespan: 1095,
+      status: 'Active' as const,
+      notes: '',
+      // v0.4.0
+      parentId: serverId,
+      isComposite: false,
+      powerWatts: 0,
+      dailyUsageHours: 0,
+      recurringMaintenanceCost: 0
     },
     {
       id: crypto.randomUUID(),
@@ -46,7 +71,13 @@ export async function seedTestData() {
       ],
       targetLifespan: 3650, // 10年
       status: 'Active' as const,
-      notes: '初學者練習吉他'
+      notes: '初學者練習吉他',
+      // v0.4.0
+      parentId: null,
+      isComposite: false,
+      powerWatts: 0,
+      dailyUsageHours: 0,
+      recurringMaintenanceCost: 500
     },
     {
       id: crypto.randomUUID(),
@@ -58,7 +89,13 @@ export async function seedTestData() {
       maintenanceLog: [],
       targetLifespan: 1825, // 5年
       status: 'Active' as const,
-      notes: '主力開發機器'
+      notes: '主力開發機器',
+      // v0.4.0
+      parentId: null,
+      isComposite: false,
+      powerWatts: 30,
+      dailyUsageHours: 10,
+      recurringMaintenanceCost: 0
     }
   ];
   

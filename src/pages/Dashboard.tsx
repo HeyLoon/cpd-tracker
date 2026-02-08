@@ -1,15 +1,17 @@
 import { Link } from 'react-router-dom';
-import { useAssets, useSubscriptions } from '../hooks/useDatabase';
+import { useAllAssets, useAllSubscriptions } from '../hooks/useDatabase';
 import { useCostCalculations, formatCurrency } from '../hooks/useCostCalculations';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { db } from '../db';
+import { getCategoryLabel } from '../utils/costCalculations';
 
 async function addTestData() {
-  // 新增測試資產
+  // v0.4.0 新增測試資產（含電力規格）
+  const serverId = crypto.randomUUID();
   await db.assets.bulkAdd([
     {
-      id: crypto.randomUUID(),
-      name: 'Orange Pi 5 Plus',
+      id: serverId,
+      name: 'Orange Pi 5 Plus 主機',
       category: 'Tech',
       purchaseDate: new Date('2024-01-15'),
       price: 3500,
@@ -17,7 +19,49 @@ async function addTestData() {
       maintenanceLog: [{ date: new Date('2024-06-10'), note: '更換散熱膏', cost: 200 }],
       targetLifespan: 1095,
       status: 'Active',
-      notes: '用來跑各種服務的小主機'
+      notes: '用來跑各種服務的小主機',
+      // v0.4.0
+      parentId: null,
+      isComposite: true, // 組合資產
+      powerWatts: 15,
+      dailyUsageHours: 24, // 24 小時運作
+      recurringMaintenanceCost: 300, // 年度化
+    },
+    {
+      id: crypto.randomUUID(),
+      name: '記憶體 16GB DDR5',
+      category: 'Tech',
+      purchaseDate: new Date('2024-01-15'),
+      price: 1200,
+      currency: 'TWD',
+      maintenanceLog: [],
+      targetLifespan: 1095,
+      status: 'Active',
+      notes: '',
+      // v0.4.0
+      parentId: serverId, // 子組件
+      isComposite: false,
+      powerWatts: 0,
+      dailyUsageHours: 0,
+      recurringMaintenanceCost: 0,
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'NVMe SSD 256GB',
+      category: 'Tech',
+      purchaseDate: new Date('2024-01-15'),
+      price: 800,
+      currency: 'TWD',
+      maintenanceLog: [],
+      targetLifespan: 1095,
+      status: 'Active',
+      notes: '',
+      // v0.4.0
+      parentId: serverId, // 子組件
+      isComposite: false,
+      powerWatts: 0,
+      dailyUsageHours: 0,
+      recurringMaintenanceCost: 0,
     },
     {
       id: crypto.randomUUID(),
@@ -29,7 +73,13 @@ async function addTestData() {
       maintenanceLog: [{ date: new Date('2024-01-05'), note: '更換琴弦', cost: 350 }],
       targetLifespan: 3650,
       status: 'Active',
-      notes: '初學者練習吉他'
+      notes: '初學者練習吉他',
+      // v0.4.0
+      parentId: null,
+      isComposite: false,
+      powerWatts: 0,
+      dailyUsageHours: 0,
+      recurringMaintenanceCost: 500, // 琴弦、保養
     },
     {
       id: crypto.randomUUID(),
@@ -41,11 +91,17 @@ async function addTestData() {
       maintenanceLog: [],
       targetLifespan: 1825,
       status: 'Active',
-      notes: '主力開發機器'
+      notes: '主力開發機器',
+      // v0.4.0
+      parentId: null,
+      isComposite: false,
+      powerWatts: 30,
+      dailyUsageHours: 10, // 每天用 10 小時
+      recurringMaintenanceCost: 0,
     }
   ]);
   
-  // 新增測試訂閱
+  // v0.4.0 新增測試訂閱（含季度）
   await db.subscriptions.bulkAdd([
     {
       id: crypto.randomUUID(),
@@ -83,53 +139,43 @@ async function addTestData() {
     {
       id: crypto.randomUUID(),
       name: 'Netflix',
-      billingCycle: 'Monthly',
-      cost: 390,
+      billingCycle: 'Quarterly', // v0.4.0 季度計費
+      cost: 1050,
       currency: 'TWD',
       startDate: new Date('2022-09-01'),
       category: 'Entertainment',
       status: 'Active',
-      notes: '影片串流服務'
+      notes: '影片串流服務（季繳優惠）'
     }
   ]);
 }
 
 export default function Dashboard() {
-  const assets = useAssets();
-  const subscriptions = useSubscriptions();
+  const assets = useAllAssets() || [];
+  const subscriptions = useAllSubscriptions() || [];
   
-  const calculations = useCostCalculations(
-    assets || [],
-    subscriptions || []
-  );
+  const calculations = useCostCalculations(assets, subscriptions);
   
-  // 準備圖表資料
+  // 準備圖表資料（Traditional Chinese）
   const chartData = calculations.costByCategory.map(item => ({
-    name: item.category,
+    name: getCategoryLabel(item.category),
     value: item.dailyCost,
     color: item.color
   }));
   
-  const isLoading = !assets || !subscriptions;
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-muted-foreground">載入中...</div>
-      </div>
-    );
-  }
+  const { invisibleCosts } = calculations;
   
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* 主要指標 - Daily Burn */}
+      {/* 主要指標 - 每日燒錢速率 */}
       <div className="bg-gradient-to-br from-red-500 to-orange-600 text-white p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-sm font-medium opacity-90">你的每日燃燒率</h1>
+            <h1 className="text-sm font-medium opacity-90">每日燒錢速率</h1>
             <Link
               to="/settings"
               className="text-white/70 hover:text-white transition-colors"
+              aria-label="設定"
             >
               ⚙️
             </Link>
@@ -145,25 +191,56 @@ export default function Dashboard() {
       
       {/* 統計卡片 */}
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {/* v0.4.0 新增：隱形成本卡片 */}
+        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg p-6 border-2 border-purple-500/30">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-purple-400 mb-1">💸 隱形成本</h3>
+              <p className="text-xs text-muted-foreground">電費 + 訂閱 + 經常性維護</p>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-purple-300">
+                {formatCurrency(invisibleCosts.totalMonthly)}
+              </div>
+              <div className="text-xs text-muted-foreground">每月</div>
+            </div>
+          </div>
+          
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">⚡ 電費</span>
+              <span className="font-semibold">{formatCurrency(invisibleCosts.totalElectricityCost)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">📱 訂閱</span>
+              <span className="font-semibold">{formatCurrency(invisibleCosts.totalSubscriptionsCost)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">🔧 維護</span>
+              <span className="font-semibold">{formatCurrency(invisibleCosts.totalRecurringMaintenance)}</span>
+            </div>
+          </div>
+        </div>
+        
         {/* 成本拆解 */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-card rounded-lg p-4 border">
-            <div className="text-sm text-muted-foreground mb-1">資產每日成本</div>
+            <div className="text-sm text-muted-foreground mb-1">資產折舊</div>
             <div className="text-2xl font-bold text-blue-500">
               {formatCurrency(calculations.assetsDailyCost)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {assets.length} 個資產
+              {assets.filter(a => a.status === 'Active').length} 個資產
             </div>
           </div>
           
           <div className="bg-card rounded-lg p-4 border">
-            <div className="text-sm text-muted-foreground mb-1">訂閱每日成本</div>
+            <div className="text-sm text-muted-foreground mb-1">訂閱費用</div>
             <div className="text-2xl font-bold text-purple-500">
               {formatCurrency(calculations.subscriptionsDailyCost)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {subscriptions.length} 個訂閱
+              {subscriptions.filter(s => s.status === 'Active').length} 個訂閱
             </div>
           </div>
         </div>
@@ -229,7 +306,7 @@ export default function Dashboard() {
                       className="w-3 h-3 rounded-full" 
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-sm">{item.category}</span>
+                    <span className="text-sm">{getCategoryLabel(item.category)}</span>
                   </div>
                   <span className="font-medium">{formatCurrency(item.dailyCost)}/日</span>
                 </div>

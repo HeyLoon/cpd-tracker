@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAsset } from '../hooks/useDatabase';
+import { useAsset, useAllAssets } from '../hooks/useDatabase';
 import { calculateAssetDetails, formatCurrency } from '../hooks/useCostCalculations';
-import { deleteAsset, updateAsset } from '../db';
+import { deleteAsset, updateAsset, getSettings } from '../db';
 import { format } from 'date-fns';
 import type { MaintenanceLog } from '../types';
 
@@ -10,8 +10,14 @@ export default function AssetDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const asset = useAsset(id);
+  const allAssets = useAllAssets() || [];
+  const [electricityRate, setElectricityRate] = useState(4.0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  
+  useEffect(() => {
+    getSettings().then(s => setElectricityRate(s.electricityRate));
+  }, []);
   
   if (!asset) {
     return (
@@ -21,7 +27,7 @@ export default function AssetDetail() {
     );
   }
   
-  const details = calculateAssetDetails(asset);
+  const details = calculateAssetDetails(asset, allAssets, electricityRate);
   
   const handleDelete = async () => {
     if (!id) return;

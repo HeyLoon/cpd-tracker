@@ -1,13 +1,23 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { calculateAssetDetails, formatCurrency } from '../hooks/useCostCalculations';
+import { getCategoryLabel, getStatusLabel } from '../utils/costCalculations';
+import { getSettings } from '../db';
 import type { PhysicalAsset } from '../types';
 
 interface AssetCardProps {
   asset: PhysicalAsset;
+  allAssets: PhysicalAsset[];
 }
 
-export default function AssetCard({ asset }: AssetCardProps) {
-  const details = calculateAssetDetails(asset);
+export default function AssetCard({ asset, allAssets }: AssetCardProps) {
+  const [electricityRate, setElectricityRate] = useState(4.0);
+  
+  useEffect(() => {
+    getSettings().then(s => setElectricityRate(s.electricityRate));
+  }, []);
+  
+  const details = calculateAssetDetails(asset, allAssets, electricityRate);
   
   const categoryEmoji: { [key: string]: string } = {
     'Tech': '💻',
@@ -32,21 +42,33 @@ export default function AssetCard({ asset }: AssetCardProps) {
           <span className="text-2xl">{categoryEmoji[asset.category]}</span>
           <div>
             <h3 className="font-semibold text-lg">{asset.name}</h3>
-            <p className="text-xs text-muted-foreground">{asset.category}</p>
+            <p className="text-xs text-muted-foreground">{getCategoryLabel(asset.category)}</p>
           </div>
         </div>
         <span className={`text-xs px-2 py-1 rounded ${statusColor[asset.status]}`}>
-          {asset.status === 'Active' ? '使用中' : asset.status === 'Sold' ? '已售出' : '已退役'}
+          {getStatusLabel(asset.status)}
         </span>
       </div>
       
-      {/* 每日成本 - 大大顯示 */}
+      {/* 每日成本 - 大大顯示（折舊 + 電費） */}
       <div className="bg-orange-500/10 rounded-lg p-3 mb-3">
         <div className="text-xs text-orange-400 mb-1">每日成本</div>
         <div className="text-2xl font-bold text-orange-500">
-          {formatCurrency(details.dailyCost, asset.currency)}
+          {formatCurrency(details.dailyCost + details.dailyElectricityCost, asset.currency)}
         </div>
+        {details.dailyElectricityCost > 0 && (
+          <div className="text-xs text-muted-foreground mt-1">
+            含電費 {formatCurrency(details.dailyElectricityCost, asset.currency)}
+          </div>
+        )}
       </div>
+      
+      {/* v0.4.0: 顯示子組件數量 */}
+      {asset.isComposite && details.children.length > 0 && (
+        <div className="mb-3 text-xs text-muted-foreground bg-accent/50 rounded px-2 py-1">
+          🔧 組合資產 ({details.children.length} 個組件)
+        </div>
+      )}
       
       {/* 統計資訊 */}
       <div className="grid grid-cols-2 gap-3 text-sm">
