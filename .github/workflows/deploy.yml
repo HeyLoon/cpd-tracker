@@ -33,10 +33,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       
-      - name: Create .env file
-        run: |
-          echo "VITE_POCKETBASE_URL=${{ secrets.VITE_POCKETBASE_URL || '' }}" > .env
-      
       - name: Build
         run: bun run build
       

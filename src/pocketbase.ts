@@ -9,18 +9,58 @@ import PocketBase from 'pocketbase';
 import type { RecordAuthResponse, RecordModel } from 'pocketbase';
 
 // PocketBase URL 配置
-// 開發環境：使用本地 Orange Pi IP
-// 生產環境：使用域名或 Cloudflare Tunnel
-const PB_URL = import.meta.env.VITE_POCKETBASE_URL || 'http://localhost:8090';
+// 從 localStorage 讀取使用者自訂的 URL
+const STORAGE_KEY = 'cpd_pocketbase_url';
+
+function getPocketBaseUrl(): string {
+  // 優先使用使用者設定的 URL
+  const customUrl = localStorage.getItem(STORAGE_KEY);
+  if (customUrl) return customUrl;
+  
+  // 預設值（用於測試，實際使用時由使用者設定）
+  return '';
+}
 
 // 建立 PocketBase 客戶端實例
-export const pb = new PocketBase(PB_URL);
+export const pb = new PocketBase(getPocketBaseUrl());
 
 // 啟用自動更新 Token
 pb.autoCancellation(false); // 防止在快速請求時取消
 
 // 從 localStorage 恢復認證狀態
 pb.authStore.loadFromCookie(document.cookie);
+
+/**
+ * 設定 PocketBase URL（由使用者在設定頁面輸入）
+ */
+export function setPocketBaseUrl(url: string): void {
+  const trimmedUrl = url.trim();
+  
+  if (trimmedUrl) {
+    // 移除尾部的斜線
+    const cleanUrl = trimmedUrl.replace(/\/$/, '');
+    localStorage.setItem(STORAGE_KEY, cleanUrl);
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  
+  // 重新載入頁面以套用新的 URL
+  window.location.reload();
+}
+
+/**
+ * 取得目前的 PocketBase URL
+ */
+export function getPocketBaseUrlSetting(): string {
+  return localStorage.getItem(STORAGE_KEY) || '';
+}
+
+/**
+ * 檢查是否已設定 PocketBase URL
+ */
+export function hasPocketBaseUrl(): boolean {
+  return !!localStorage.getItem(STORAGE_KEY);
+}
 
 /**
  * 類型定義：PocketBase Collections
@@ -180,8 +220,11 @@ export function getPhotoUrl(asset: PBAsset, thumbnail: '100x100' | '500x500' | '
 
 // 檢查 PocketBase 是否在線
 export async function checkPocketBaseHealth(): Promise<boolean> {
+  const url = getPocketBaseUrl();
+  if (!url) return false;
+  
   try {
-    const response = await fetch(`${PB_URL}/api/health`, {
+    const response = await fetch(`${url}/api/health`, {
       method: 'GET',
       signal: AbortSignal.timeout(5000), // 5 秒超時
     });

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { exportData, importData, getSettings, updateSettings } from '../db';
+import { getPocketBaseUrlSetting, setPocketBaseUrl, hasPocketBaseUrl } from '../pocketbase';
+import { useAuth } from '../hooks/useSync';
 
 export default function Settings() {
   const [importing, setImporting] = useState(false);
@@ -11,11 +13,20 @@ export default function Settings() {
   const [savingRate, setSavingRate] = useState(false);
   const [rateSaved, setRateSaved] = useState(false);
   
+  // v0.6.0 新增：PocketBase URL 設定
+  const [pbUrl, setPbUrl] = useState('');
+  const [savingPbUrl, setSavingPbUrl] = useState(false);
+  const [pbUrlSaved, setPbUrlSaved] = useState(false);
+  const { isAuthenticated } = useAuth();
+  
   // 載入電費設定
   useEffect(() => {
     getSettings().then(settings => {
       setElectricityRate(settings.electricityRate.toString());
     });
+    
+    // 載入 PocketBase URL
+    setPbUrl(getPocketBaseUrlSetting());
   }, []);
   
   const handleSaveElectricityRate = async () => {
@@ -32,6 +43,39 @@ export default function Settings() {
     } finally {
       setSavingRate(false);
     }
+  };
+  
+  const handleSavePocketBaseUrl = async () => {
+    if (!pbUrl.trim()) {
+      alert('請輸入有效的 URL');
+      return;
+    }
+    
+    // 驗證 URL 格式
+    try {
+      new URL(pbUrl);
+    } catch {
+      alert('URL 格式不正確，請檢查後重試\n範例：http://192.168.1.100:8090');
+      return;
+    }
+    
+    setSavingPbUrl(true);
+    try {
+      setPocketBaseUrl(pbUrl);
+      setPbUrlSaved(true);
+      // setPocketBaseUrl 會自動重新載入頁面
+    } catch (error) {
+      console.error('儲存失敗:', error);
+      alert('儲存失敗，請重試');
+      setSavingPbUrl(false);
+    }
+  };
+  
+  const handleClearPocketBaseUrl = () => {
+    if (!confirm('確定要清除 PocketBase 設定嗎？這將切換回純離線模式。')) {
+      return;
+    }
+    setPocketBaseUrl('');
   };
   
   const handleExport = async () => {
@@ -88,6 +132,86 @@ export default function Settings() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">設定</h1>
           <p className="text-muted-foreground">管理你的應用程式設定與資料</p>
+        </div>
+        
+        {/* v0.6.0 新增：PocketBase 同步設定 */}
+        <div className="bg-card border rounded-lg p-4 mb-4">
+          <h3 className="font-semibold mb-4">🔄 資料同步設定</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                PocketBase 伺服器 URL
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                設定自架的 PocketBase 後端 URL 以啟用多裝置同步功能。留空則以純離線模式運作。
+              </p>
+              
+              {/* 狀態顯示 */}
+              <div className="mb-3 p-3 bg-background rounded-lg border">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className={`w-2 h-2 rounded-full ${hasPocketBaseUrl() ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                  <span className="font-medium">
+                    {hasPocketBaseUrl() ? '已設定同步伺服器' : '純離線模式'}
+                  </span>
+                </div>
+                {hasPocketBaseUrl() && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span>認證狀態：</span>
+                      <span className={isAuthenticated ? 'text-green-500' : 'text-yellow-500'}>
+                        {isAuthenticated ? '✓ 已登入' : '未登入'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={pbUrl}
+                  onChange={(e) => setPbUrl(e.target.value)}
+                  className="flex-1 bg-background border rounded-lg px-3 py-2 font-mono text-sm"
+                  placeholder="http://192.168.1.100:8090"
+                />
+                <button
+                  onClick={handleSavePocketBaseUrl}
+                  disabled={savingPbUrl || !pbUrl.trim()}
+                  className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {savingPbUrl ? '儲存中...' : '儲存'}
+                </button>
+              </div>
+              
+              {hasPocketBaseUrl() && (
+                <button
+                  onClick={handleClearPocketBaseUrl}
+                  className="mt-2 text-sm text-red-500 hover:text-red-400"
+                >
+                  清除設定（切換回離線模式）
+                </button>
+              )}
+              
+              {pbUrlSaved && (
+                <div className="mt-2 text-sm text-green-500">
+                  ✓ URL 已儲存！頁面即將重新載入...
+                </div>
+              )}
+            </div>
+            
+            {/* 說明 */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <p className="text-xs text-blue-400">
+                💡 <strong>URL 範例：</strong><br/>
+                • 本地網路：<code>http://192.168.1.100:8090</code><br/>
+                • 公開網域：<code>https://api.yourdomain.com</code><br/>
+                • DuckDNS：<code>http://yourdomain.duckdns.org:8090</code><br/>
+                <br/>
+                設定後請前往「登入」頁面註冊/登入帳號以啟用同步。
+              </p>
+            </div>
+          </div>
         </div>
         
         {/* v0.4.0 新增：電費設定 */}
@@ -206,7 +330,7 @@ export default function Settings() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">版本</span>
-              <span className="font-medium">v0.4.0</span>
+              <span className="font-medium">v0.6.0</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">專案類型</span>
@@ -214,11 +338,11 @@ export default function Settings() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">資料儲存</span>
-              <span className="font-medium">IndexedDB (本地)</span>
+              <span className="font-medium">IndexedDB + 可選同步</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">新功能</span>
-              <span className="font-medium text-green-500">組合資產 • 電費追蹤</span>
+              <span className="font-medium text-green-500">自訂同步伺服器</span>
             </div>
           </div>
           
