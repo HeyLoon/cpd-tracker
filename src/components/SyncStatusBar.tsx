@@ -7,6 +7,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useSyncStatus, useOnlineStatus, useAuth } from '../hooks/useSync';
 import { hasPocketBaseUrl } from '../pocketbase';
+import { hasSupabaseConfig } from '../supabase';
 import { Cloud, RefreshCw, CheckCircle2, AlertCircle, WifiOff, LogIn } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
@@ -17,15 +18,17 @@ export default function SyncStatusBar() {
   const isOnline = useOnlineStatus();
   const { isAuthenticated } = useAuth();
   const hasPbUrl = hasPocketBaseUrl();
+  const hasSupabase = hasSupabaseConfig();
+  const backendType = hasSupabase ? 'Supabase' : hasPbUrl ? 'PocketBase' : null;
 
-  // 如果設定了 PocketBase URL 但未登入，顯示提示
-  if (hasPbUrl && !isAuthenticated) {
+  // 如果設定了同步伺服器但未登入，顯示提示
+  if ((hasPbUrl || hasSupabase) && !isAuthenticated) {
     return (
       <div className="fixed top-0 left-0 right-0 z-50 px-4 py-2 flex items-center justify-between gap-3 bg-yellow-500/20 border-b border-yellow-500/30">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <LogIn className="w-4 h-4 text-yellow-400 flex-shrink-0" />
           <p className="text-xs text-yellow-300 truncate">
-            已設定同步伺服器，但尚未登入
+            已設定同步伺服器（{backendType}），但尚未登入
           </p>
         </div>
         <button
@@ -79,8 +82,8 @@ export default function SyncStatusBar() {
             <p className="text-xs text-slate-300 truncate">離線模式 - 資料儲存在本地</p>
           ) : status.error ? (
             <p className="text-xs text-red-300 truncate">
-              {status.error.includes('設定 PocketBase') 
-                ? '尚未設定伺服器 URL' 
+              {status.error.includes('設定') 
+                ? `尚未設定伺服器 URL` 
                 : status.error.includes('登入')
                 ? '請先登入帳號'
                 : status.error.includes('集合尚未建立') || status.error.includes('Missing collection')

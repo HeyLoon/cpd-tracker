@@ -1,13 +1,50 @@
 /**
- * PocketBase 同步 React Hooks
+ * 同步 React Hooks
  * 
- * 提供便利的 React 整合
+ * 支援 PocketBase 和 Supabase 兩種後端
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { syncService, type SyncStatus, type SyncResult } from '../syncService';
+import { syncService as pbSyncService, type SyncStatus, type SyncResult } from '../syncService';
+import { supabaseSyncService } from '../supabaseSyncService';
 import type { SyncDirection } from '../syncService';
-import { isAuthenticated, onAuthChange, getCurrentUser, type PBUser } from '../pocketbase';
+import { 
+  isAuthenticated as pbIsAuthenticated, 
+  onAuthChange as pbOnAuthChange, 
+  getCurrentUser as pbGetCurrentUser, 
+  type PBUser,
+  hasPocketBaseUrl 
+} from '../pocketbase';
+import { 
+  isAuthenticatedAsync,
+  getCurrentUser as sbGetCurrentUser,
+  onAuthChange as sbOnAuthChange,
+  hasSupabaseConfig
+} from '../supabase';
+
+/**
+ * 取得當前使用的同步服務
+ */
+function getSyncService() {
+  if (hasSupabaseConfig()) {
+    return supabaseSyncService;
+  } else if (hasPocketBaseUrl()) {
+    return pbSyncService;
+  }
+  return null;
+}
+
+/**
+ * 檢查是否已認證（支援兩種後端）- 非同步版本
+ */
+async function isUserAuthenticated(): Promise<boolean> {
+  if (hasSupabaseConfig()) {
+    return await isAuthenticatedAsync();
+  } else if (hasPocketBaseUrl()) {
+    return pbIsAuthenticated();
+  }
+  return false;
+}
 
 /**
  * Hook: 監聽同步狀態
@@ -22,6 +59,11 @@ export function useSyncStatus(): SyncStatus & { sync: (direction?: SyncDirection
   });
 
   useEffect(() => {
+    const syncService = getSyncService();
+    if (!syncService) {
+      return;
+    }
+
     // 訂閱狀態變更
     const unsubscribe = syncService.onStatusChange(setStatus);
 
@@ -44,6 +86,16 @@ export function useSyncStatus(): SyncStatus & { sync: (direction?: SyncDirection
   }, []);
 
   const sync = useCallback(async (direction?: SyncDirection) => {
+    const syncService = getSyncService();
+    if (!syncService) {
+      return {
+        success: false,
+        uploaded: 0,
+        downloaded: 0,
+        conflicts: 0,
+        errors: ['未設定同步伺服器'],
+      };
+    }
     return await syncService.sync(direction);
   }, []);
 
@@ -55,26 +107,57 @@ export function useSyncStatus(): SyncStatus & { sync: (direction?: SyncDirection
  */
 export function useAuth(): {
   isAuthenticated: boolean;
-  user: PBUser | null;
+  user: PBUser | any | null;
   isLoading: boolean;
 } {
-  const [isAuth, setIsAuth] = useState(isAuthenticated());
-  const [user, setUser] = useState<PBUser | null>(getCurrentUser());
+  const [isAuth, setIsAuth] = useState(false);
+  const [user, setUser] = useState<PBUser | any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 初始化
-    setIsAuth(isAuthenticated());
-    setUser(getCurrentUser());
-    setIsLoading(false);
+    let mounted = true;
+    
+    // 非同步初始化
+    const initialize = async () => {
+      const authenticated = await isUserAuthenticated();
+      if (!mounted) return;
+      
+      setIsAuth(authenticated);
+      setIsLoading(false);
 
-    // 監聽認證狀態變更
-    const unsubscribe = onAuthChange((token, model) => {
-      setIsAuth(!!token);
-      setUser(model as PBUser | null);
-    });
+      // 根據後端類型設定使用者和監聽器
+      if (hasSupabaseConfig()) {
+        // Supabase
+        const currentUser = await sbGetCurrentUser();
+        if (mounted) setUser(currentUser);
+        
+        const unsubscribe = sbOnAuthChange((user) => {
+          if (!mounted) return;
+          setIsAuth(!!user);
+          setUser(user);
+        });
+        return unsubscribe;
+      } else if (hasPocketBaseUrl()) {
+        // PocketBase
+        if (mounted) setUser(pbGetCurrentUser());
+        
+        const unsubscribe = pbOnAuthChange((token, model) => {
+          if (!mounted) return;
+          setIsAuth(!!token);
+          setUser(model as PBUser | null);
+        });
+        return unsubscribe;
+      }
+    };
 
-    return unsubscribe;
+    const cleanupPromise = initialize();
+    
+    return () => {
+      mounted = false;
+      cleanupPromise.then(cleanup => {
+        if (cleanup) cleanup();
+      });
+    };
   }, []);
 
   return { isAuthenticated: isAuth, user, isLoading };
@@ -86,6 +169,9 @@ export function useAuth(): {
 export function useAutoSync(enabled = true, intervalMinutes = 5): void {
   useEffect(() => {
     if (!enabled) return;
+
+    const syncService = getSyncService();
+    if (!syncService) return;
 
     syncService.startAutoSync(intervalMinutes);
 

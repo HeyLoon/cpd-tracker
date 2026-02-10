@@ -2,9 +2,10 @@
  * 登入/註冊頁面
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, register, parsePocketBaseError } from '../pocketbase';
+import { login as pbLogin, register as pbRegister, parsePocketBaseError, hasPocketBaseUrl } from '../pocketbase';
+import { login as sbLogin, register as sbRegister, hasSupabaseConfig } from '../supabase';
 import { Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -15,10 +16,28 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [backend, setBackend] = useState<'supabase' | 'pocketbase' | null>(null);
+
+  // 偵測使用的後端
+  useEffect(() => {
+    if (hasSupabaseConfig()) {
+      setBackend('supabase');
+    } else if (hasPocketBaseUrl()) {
+      setBackend('pocketbase');
+    } else {
+      setBackend(null);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // 檢查是否已設定後端
+    if (!backend) {
+      setError('請先到設定頁面設定同步伺服器（Supabase 或 PocketBase）');
+      return;
+    }
 
     // 驗證
     if (!email || !password) {
@@ -39,18 +58,40 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      if (mode === 'register') {
-        await register(email, password);
-        alert('註冊成功！請登入。');
-        setMode('login');
-        setPassword('');
-        setConfirmPassword('');
-      } else {
-        await login(email, password);
-        navigate('/');
+      if (backend === 'supabase') {
+        // 使用 Supabase
+        if (mode === 'register') {
+          const { error: sbError } = await sbRegister(email, password);
+          if (sbError) throw sbError;
+          alert('註冊成功！請登入。');
+          setMode('login');
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          const { error: sbError } = await sbLogin(email, password);
+          if (sbError) throw sbError;
+          navigate('/');
+        }
+      } else if (backend === 'pocketbase') {
+        // 使用 PocketBase
+        if (mode === 'register') {
+          await pbRegister(email, password);
+          alert('註冊成功！請登入。');
+          setMode('login');
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          await pbLogin(email, password);
+          navigate('/');
+        }
       }
     } catch (err) {
-      setError(parsePocketBaseError(err));
+      // 解析錯誤訊息
+      if (backend === 'pocketbase') {
+        setError(parsePocketBaseError(err));
+      } else {
+        setError(err instanceof Error ? err.message : '登入失敗，請重試');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -63,10 +104,40 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-primary mb-2">CPD Tracker</h1>
           <p className="text-slate-400">Cost Per Day 資產管理</p>
+          {backend && (
+            <div className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-medium ${
+              backend === 'supabase' 
+                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                : 'bg-green-500/10 text-green-400 border border-green-500/30'
+            }`}>
+              使用 {backend === 'supabase' ? 'Supabase' : 'PocketBase'} 同步
+            </div>
+          )}
         </div>
 
         {/* 表單 */}
         <div className="glass rounded-2xl p-8 border border-slate-800">
+          {/* 未設定後端警告 */}
+          {!backend && (
+            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-yellow-400 font-medium mb-1">尚未設定同步伺服器</p>
+                  <p className="text-xs text-yellow-400/80">
+                    請先到「設定」頁面設定 Supabase 或 PocketBase，再返回此頁面登入。
+                  </p>
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="mt-2 text-xs text-yellow-300 hover:text-yellow-200 underline"
+                  >
+                    → 前往設定頁面
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* 模式切換 */}
           <div className="flex gap-2 mb-6">
             <button
