@@ -4,14 +4,39 @@
  * 顯示在頁面頂部，提供即時同步狀態
  */
 
-import { useSyncStatus, useOnlineStatus } from '../hooks/useSync';
-import { Cloud, RefreshCw, CheckCircle2, AlertCircle, WifiOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useSyncStatus, useOnlineStatus, useAuth } from '../hooks/useSync';
+import { hasPocketBaseUrl } from '../pocketbase';
+import { Cloud, RefreshCw, CheckCircle2, AlertCircle, WifiOff, LogIn } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 
 export default function SyncStatusBar() {
+  const navigate = useNavigate();
   const status = useSyncStatus();
   const isOnline = useOnlineStatus();
+  const { isAuthenticated } = useAuth();
+  const hasPbUrl = hasPocketBaseUrl();
+
+  // 如果設定了 PocketBase URL 但未登入，顯示提示
+  if (hasPbUrl && !isAuthenticated) {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 py-2 flex items-center justify-between gap-3 bg-yellow-500/20 border-b border-yellow-500/30">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <LogIn className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+          <p className="text-xs text-yellow-300 truncate">
+            已設定同步伺服器，但尚未登入
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/login')}
+          className="px-3 py-1 text-xs font-medium bg-yellow-500/30 hover:bg-yellow-500/40 rounded-lg transition-colors flex-shrink-0"
+        >
+          前往登入
+        </button>
+      </div>
+    );
+  }
 
   // 不顯示條件：已同步且沒有待上傳項目
   if (!status.isSyncing && status.pendingUploads === 0 && !status.error) {

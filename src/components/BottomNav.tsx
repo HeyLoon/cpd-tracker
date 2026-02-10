@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, CreditCard, PieChart } from 'lucide-react';
+import { LayoutDashboard, Package, CreditCard, PieChart, Settings } from 'lucide-react';
 
 interface NavItem {
   path: string;
@@ -12,6 +12,7 @@ const navItems: NavItem[] = [
   { path: '/assets', icon: Package, label: '資產' },
   { path: '/subscriptions', icon: CreditCard, label: '訂閱' },
   { path: '/analytics', icon: PieChart, label: '分析' },
+  { path: '/settings', icon: Settings, label: '設定' },
 ];
 
 export default function BottomNav() {

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { exportData, importData, getSettings, updateSettings } from '../db';
 import { getPocketBaseUrlSetting, setPocketBaseUrl, hasPocketBaseUrl } from '../pocketbase';
 import { useAuth } from '../hooks/useSync';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
@@ -163,6 +165,14 @@ export default function Settings() {
                         {isAuthenticated ? '✓ 已登入' : '未登入'}
                       </span>
                     </div>
+                    {!isAuthenticated && (
+                      <button
+                        onClick={() => navigate('/login')}
+                        className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline"
+                      >
+                        → 前往登入頁面
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -199,6 +209,26 @@ export default function Settings() {
                 </div>
               )}
             </div>
+            
+            {/* 快速操作按鈕 */}
+            {hasPocketBaseUrl() && (
+              <div className="flex gap-2">
+                {isAuthenticated ? (
+                  <div className="flex-1 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
+                    <div className="text-sm text-green-400">
+                      ✓ 已連線並登入，資料將自動同步
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => navigate('/login')}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    🔑 前往登入/註冊
+                  </button>
+                )}
+              </div>
+            )}
             
             {/* 說明 */}
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
