@@ -1,0 +1,178 @@
+{
+  "id": "cpd_subscriptions_collection",
+  "name": "subscriptions",
+  "type": "base",
+  "system": false,
+  "schema": [
+    {
+      "id": "field_name",
+      "name": "name",
+      "type": "text",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "min": null,
+        "max": null,
+        "pattern": ""
+      }
+    },
+    {
+      "id": "field_cost",
+      "name": "cost",
+      "type": "number",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "min": 0,
+        "max": null,
+        "noDecimal": false
+      }
+    },
+    {
+      "id": "field_currency",
+      "name": "currency",
+      "type": "select",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "maxSelect": 1,
+        "values": [
+          "TWD",
+          "USD",
+          "JPY"
+        ]
+      }
+    },
+    {
+      "id": "field_billing_cycle",
+      "name": "billing_cycle",
+      "type": "select",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "maxSelect": 1,
+        "values": [
+          "Monthly",
+          "Quarterly",
+          "Yearly"
+        ]
+      }
+    },
+    {
+      "id": "field_start_date",
+      "name": "start_date",
+      "type": "date",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "min": "",
+        "max": ""
+      }
+    },
+    {
+      "id": "field_category",
+      "name": "category",
+      "type": "select",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "maxSelect": 1,
+        "values": [
+          "Software",
+          "Service",
+          "Entertainment"
+        ]
+      }
+    },
+    {
+      "id": "field_status",
+      "name": "status",
+      "type": "select",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "maxSelect": 1,
+        "values": [
+          "Active",
+          "Cancelled"
+        ]
+      }
+    },
+    {
+      "id": "field_cancelled_date",
+      "name": "cancelled_date",
+      "type": "date",
+      "required": false,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "min": "",
+        "max": ""
+      }
+    },
+    {
+      "id": "field_notes",
+      "name": "notes",
+      "type": "text",
+      "required": false,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "min": null,
+        "max": null,
+        "pattern": ""
+      }
+    },
+    {
+      "id": "field_user",
+      "name": "user",
+      "type": "relation",
+      "required": true,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "collectionId": "_pb_users_auth_",
+        "cascadeDelete": true,
+        "minSelect": null,
+        "maxSelect": 1,
+        "displayFields": null
+      }
+    },
+    {
+      "id": "field_synced",
+      "name": "synced",
+      "type": "bool",
+      "required": false,
+      "presentable": false,
+      "unique": false,
+      "options": {}
+    },
+    {
+      "id": "field_local_id",
+      "name": "local_id",
+      "type": "text",
+      "required": false,
+      "presentable": false,
+      "unique": false,
+      "options": {
+        "min": null,
+        "max": null,
+        "pattern": ""
+      }
+    }
+  ],
+  "indexes": [],
+  "listRule": "user = @request.auth.id",
+  "viewRule": "user = @request.auth.id",
+  "createRule": "@request.auth.id != \"\" && user = @request.auth.id",
+  "updateRule": "user = @request.auth.id",
+  "deleteRule": "user = @request.auth.id",
+  "options": {}
+}
