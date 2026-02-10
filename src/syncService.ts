@@ -255,6 +255,8 @@ class SyncService {
     for (const asset of pendingAssets) {
       try {
         const pbData = this.assetToPocketBase(asset, user.id);
+        console.log('📤 準備上傳資產:', asset.name);
+        console.log('📤 PocketBase 資料:', pbData);
         
         if (asset.remoteId) {
           // 更新現有記錄
@@ -281,6 +283,12 @@ class SyncService {
         uploaded++;
       } catch (error) {
         console.error(`上傳資產失敗 (${asset.name}):`, error);
+        
+        // 詳細錯誤日誌
+        if (error && typeof error === 'object') {
+          console.error('錯誤詳情:', JSON.stringify(error, null, 2));
+        }
+        
         const errorMsg = error instanceof Error ? error.message : '未知錯誤';
         
         // 特殊錯誤處理
@@ -289,7 +297,11 @@ class SyncService {
           break; // 停止繼續嘗試
         }
         
-        errors.push(`資產 "${asset.name}": ${errorMsg}`);
+        if (errorMsg.includes('Something went wrong')) {
+          errors.push(`資產 "${asset.name}": 請檢查 PocketBase 欄位設定是否正確（詳見控制台）`);
+        } else {
+          errors.push(`資產 "${asset.name}": ${errorMsg}`);
+        }
       }
     }
 
