@@ -43,6 +43,7 @@ class SyncService {
   private syncInProgress = false;
   private syncInterval: number | null = null;
   private listeners: ((status: SyncStatus) => void)[] = [];
+  private lastError: string | null = null;
 
   /**
    * 取得當前同步狀態
@@ -62,7 +63,7 @@ class SyncService {
       isSyncing: this.syncInProgress,
       lastSyncAt,
       pendingUploads: pendingAssets + pendingSubs,
-      error: null,
+      error: this.lastError,
     };
   }
 
@@ -141,6 +142,8 @@ class SyncService {
     // 檢查網路連線
     if (!navigator.onLine) {
       console.log('📵 離線模式，跳過同步');
+      this.lastError = '網路未連線';
+      await this.notifyListeners();
       return {
         success: false,
         uploaded: 0,
@@ -153,16 +156,33 @@ class SyncService {
     // 檢查認證狀態
     if (!isAuthenticated()) {
       console.log('🔒 未登入，跳過同步');
+      this.lastError = '請先登入帳號';
+      await this.notifyListeners();
       return {
         success: false,
         uploaded: 0,
         downloaded: 0,
         conflicts: 0,
-        errors: ['未登入'],
+        errors: ['請先登入帳號'],
+      };
+    }
+
+    // 檢查 PocketBase URL
+    if (!pb.baseUrl) {
+      console.log('⚙️ 未設定 PocketBase URL，跳過同步');
+      this.lastError = '請在設定頁面設定 PocketBase 伺服器 URL';
+      await this.notifyListeners();
+      return {
+        success: false,
+        uploaded: 0,
+        downloaded: 0,
+        conflicts: 0,
+        errors: ['請在設定頁面設定 PocketBase 伺服器 URL'],
       };
     }
 
     this.syncInProgress = true;
+    this.lastError = null; // 清除之前的錯誤
     await this.notifyListeners();
 
     const result: SyncResult = {
@@ -197,10 +217,19 @@ class SyncService {
       } as any);
 
       console.log(`✅ 同步完成: 上傳 ${result.uploaded}, 下載 ${result.downloaded}, 衝突 ${result.conflicts}`);
+      
+      // 清除錯誤狀態
+      if (result.errors.length === 0) {
+        this.lastError = null;
+      } else {
+        this.lastError = result.errors[0];
+      }
     } catch (error) {
       console.error('❌ 同步失敗:', error);
       result.success = false;
-      result.errors.push(error instanceof Error ? error.message : '未知錯誤');
+      const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+      result.errors.push(errorMsg);
+      this.lastError = errorMsg;
     } finally {
       this.syncInProgress = false;
       await this.notifyListeners();

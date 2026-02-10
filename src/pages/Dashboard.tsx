@@ -96,7 +96,7 @@ export default function Dashboard() {
   const { invisibleCosts } = calculations;
   
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 pt-12">
       {/* ========== HERO SECTION - Professional Burn Rate ========== */}
       <div className="relative overflow-hidden border-b border-slate-800">
         {/* Subtle gradient overlay */}

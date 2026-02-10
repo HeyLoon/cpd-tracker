@@ -48,7 +48,7 @@ export default function Analytics() {
   // No data state
   if (assets.length === 0 && subscriptions.length === 0) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-screen bg-background pb-20 pt-12">
         <div className="max-w-4xl mx-auto p-4">
           <div className="mb-6">
             <h1 className="text-3xl font-bold mb-2">數據分析</h1>
@@ -72,7 +72,7 @@ export default function Analytics() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 pt-12">
       <div className="max-w-6xl mx-auto p-4">
         {/* Header */}
         <div className="mb-6">

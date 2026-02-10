@@ -78,7 +78,13 @@ export default function SyncStatusBar() {
           {!isOnline ? (
             <p className="text-xs text-slate-300 truncate">離線模式 - 資料儲存在本地</p>
           ) : status.error ? (
-            <p className="text-xs text-red-300 truncate">同步失敗: {status.error}</p>
+            <p className="text-xs text-red-300 truncate">
+              {status.error.includes('設定 PocketBase') 
+                ? '尚未設定伺服器 URL' 
+                : status.error.includes('登入')
+                ? '請先登入帳號'
+                : `同步失敗: ${status.error}`}
+            </p>
           ) : status.isSyncing ? (
             <p className="text-xs text-blue-300 truncate">正在同步資料...</p>
           ) : status.pendingUploads > 0 ? (

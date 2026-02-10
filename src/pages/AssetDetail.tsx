@@ -83,7 +83,7 @@ export default function AssetDetail() {
   };
   
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 pt-12">
       <div className="max-w-2xl mx-auto p-4">
         {/* 标题 */}
         <div className="mb-6">
