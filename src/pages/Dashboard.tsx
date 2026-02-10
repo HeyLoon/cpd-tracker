@@ -32,7 +32,7 @@ function PriceDisplay({ amount, size = 'default', currency = 'TWD' }: {
     small: { symbol: 'text-xs', number: 'text-lg' },
     default: { symbol: 'text-sm', number: 'text-2xl' },
     large: { symbol: 'text-base', number: 'text-4xl' },
-    hero: { symbol: 'text-2xl', number: 'text-7xl md:text-8xl' }
+    hero: { symbol: 'text-lg sm:text-xl md:text-2xl', number: 'text-5xl sm:text-6xl md:text-7xl lg:text-8xl' }
   };
   
   const classes = sizeClasses[size];
@@ -102,12 +102,12 @@ export default function Dashboard() {
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
         
-        <div className="relative max-w-4xl mx-auto px-6 pt-8 pb-12">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-12">
           {/* Header with settings */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-widest">
                 Real-Time Monitor
               </span>
             </div>
@@ -122,12 +122,12 @@ export default function Dashboard() {
 
           {/* Main metric */}
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+            <h2 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider">
               你的數位生活每日成本
             </h2>
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
               <PriceDisplay amount={calculations.totalDailyBurn} size="hero" />
-              <span className="text-2xl font-bold text-slate-500 mb-2">/ 日</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-500 mb-2">/ 日</span>
             </div>
             <p className="text-sm text-slate-500 flex items-center gap-2">
               <Activity className="w-4 h-4" />
@@ -136,27 +136,27 @@ export default function Dashboard() {
           </div>
 
           {/* Quick stats */}
-          <div className="mt-8 grid grid-cols-3 gap-4">
-            <div className="glass rounded-xl p-4 border border-slate-800">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                <div className="text-xs text-slate-400 uppercase tracking-wide">月支出</div>
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="glass rounded-xl p-3 sm:p-4 border border-slate-800">
+              <div className="flex items-center gap-1 sm:gap-2 mb-2">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
+                <div className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wide">月支出</div>
               </div>
-              <PriceDisplay amount={calculations.totalMonthlyCost} size="default" />
+              <PriceDisplay amount={calculations.totalMonthlyCost} size="small" />
             </div>
-            <div className="glass rounded-xl p-4 border border-slate-800">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-slate-400" />
-                <div className="text-xs text-slate-400 uppercase tracking-wide">年支出</div>
+            <div className="glass rounded-xl p-3 sm:p-4 border border-slate-800">
+              <div className="flex items-center gap-1 sm:gap-2 mb-2">
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
+                <div className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wide">年支出</div>
               </div>
-              <PriceDisplay amount={calculations.totalYearlyCost} size="default" />
+              <PriceDisplay amount={calculations.totalYearlyCost} size="small" />
             </div>
-            <div className="glass rounded-xl p-4 border border-slate-800">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-slate-400" />
-                <div className="text-xs text-slate-400 uppercase tracking-wide">活躍項目</div>
+            <div className="glass rounded-xl p-3 sm:p-4 border border-slate-800 col-span-2 sm:col-span-1">
+              <div className="flex items-center gap-1 sm:gap-2 mb-2">
+                <Target className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
+                <div className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wide">活躍項目</div>
               </div>
-              <div className="text-2xl font-black text-emerald-400">
+              <div className="text-xl sm:text-2xl font-black text-emerald-400">
                 {assets.filter(a => a.status === 'Active').length + subscriptions.filter(s => s.status === 'Active').length}
               </div>
             </div>
@@ -165,10 +165,10 @@ export default function Dashboard() {
       </div>
 
       {/* ========== INVISIBLE COSTS - Stat Blocks Style ========== */}
-      <div className="max-w-4xl mx-auto px-6 py-6">
-        <div className="glass rounded-2xl p-6 border border-slate-800">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <div className="glass rounded-2xl p-4 sm:p-6 border border-slate-800">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-slate-800 gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center">
                 <Zap className="w-5 h-5 text-purple-400" />
@@ -178,14 +178,14 @@ export default function Dashboard() {
                 <p className="text-xs text-slate-400">經常性支出項目</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <div className="text-xs text-slate-400 mb-1 uppercase tracking-wide">每月總計</div>
               <PriceDisplay amount={invisibleCosts.totalMonthly} size="large" />
             </div>
           </div>
 
           {/* Stat blocks grid */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {/* Electricity */}
             <div className="bg-gradient-to-br from-yellow-500/5 to-orange-500/5 rounded-xl p-4 border border-yellow-500/20">
               <div className="flex items-center gap-2 mb-3">
@@ -220,11 +220,11 @@ export default function Dashboard() {
       </div>
 
       {/* ========== COST BREAKDOWN ========== */}
-      <div className="max-w-4xl mx-auto px-6 pb-6">
-        <div className="grid grid-cols-2 gap-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Assets */}
           <Link to="/assets" className="card-hover">
-            <div className="glass rounded-2xl p-6 border border-slate-800 hover:border-blue-500/50 transition-colors">
+            <div className="glass rounded-2xl p-4 sm:p-6 border border-slate-800 hover:border-blue-500/50 transition-colors">
               <div className="flex items-center gap-3 mb-4">
                 <Package className="w-5 h-5 text-blue-400" />
                 <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
@@ -243,7 +243,7 @@ export default function Dashboard() {
 
           {/* Subscriptions */}
           <Link to="/subscriptions" className="card-hover">
-            <div className="glass rounded-2xl p-6 border border-slate-800 hover:border-purple-500/50 transition-colors">
+            <div className="glass rounded-2xl p-4 sm:p-6 border border-slate-800 hover:border-purple-500/50 transition-colors">
               <div className="flex items-center gap-3 mb-4">
                 <CreditCard className="w-5 h-5 text-purple-400" />
                 <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">

@@ -281,7 +281,15 @@ class SyncService {
         uploaded++;
       } catch (error) {
         console.error(`上傳資產失敗 (${asset.name}):`, error);
-        errors.push(`資產 "${asset.name}": ${error instanceof Error ? error.message : '未知錯誤'}`);
+        const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+        
+        // 特殊錯誤處理
+        if (errorMsg.includes('Missing collection context') || errorMsg.includes('not found')) {
+          errors.push('PocketBase 集合尚未建立，請先在 PocketBase Admin UI 建立 assets 集合');
+          break; // 停止繼續嘗試
+        }
+        
+        errors.push(`資產 "${asset.name}": ${errorMsg}`);
       }
     }
 
@@ -314,7 +322,15 @@ class SyncService {
         uploaded++;
       } catch (error) {
         console.error(`上傳訂閱失敗 (${sub.name}):`, error);
-        errors.push(`訂閱 "${sub.name}": ${error instanceof Error ? error.message : '未知錯誤'}`);
+        const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+        
+        // 特殊錯誤處理
+        if (errorMsg.includes('Missing collection context') || errorMsg.includes('not found')) {
+          errors.push('PocketBase 集合尚未建立，請先在 PocketBase Admin UI 建立 subscriptions 集合');
+          break; // 停止繼續嘗試
+        }
+        
+        errors.push(`訂閱 "${sub.name}": ${errorMsg}`);
       }
     }
 

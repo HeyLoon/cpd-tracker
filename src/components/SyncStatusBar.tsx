@@ -83,6 +83,8 @@ export default function SyncStatusBar() {
                 ? '尚未設定伺服器 URL' 
                 : status.error.includes('登入')
                 ? '請先登入帳號'
+                : status.error.includes('集合尚未建立') || status.error.includes('Missing collection')
+                ? '⚠️ PocketBase 後端尚未設定'
                 : `同步失敗: ${status.error}`}
             </p>
           ) : status.isSyncing ? (
@@ -111,12 +113,22 @@ export default function SyncStatusBar() {
       )}
 
       {status.error && (
-        <button
-          onClick={handleSync}
-          className="px-3 py-1 text-xs font-medium bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
-        >
-          重試
-        </button>
+        <>
+          <button
+            onClick={handleSync}
+            className="px-3 py-1 text-xs font-medium bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
+          >
+            重試
+          </button>
+          {(status.error.includes('集合尚未建立') || status.error.includes('Missing collection')) && (
+            <button
+              onClick={() => navigate('/settings')}
+              className="px-3 py-1 text-xs font-medium bg-blue-500/30 hover:bg-blue-500/40 rounded-lg transition-colors flex-shrink-0"
+            >
+              查看說明
+            </button>
+          )}
+        </>
       )}
     </div>
   );
